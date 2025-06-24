@@ -1,0 +1,35 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.hazelcast.fcannizzohz</groupId>
+  <artifactId>hsbc-workshop</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <name>HSBC Workshop</name>
+
+  <properties>
+    <maven.compiler.target>21</maven.compiler.target>
+    <maven.compiler.source>21</maven.compiler.source>
+    <spring.framework.version>6.0.8</spring.framework.version>
+    <spring.kafka.version>2.9.3</spring.kafka.version>
+    <hazelcast.version>5.5.6</hazelcast.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.hazelcast</groupId>
+      <artifactId>hazelcast-enterprise</artifactId>
+      <version>${hazelcast.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-clients</artifactId>
+      <version>4.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>1.7.36</version>
+      <scope>runtime</scope>
+    </dependency>
+  </dependencies>
+</project>
