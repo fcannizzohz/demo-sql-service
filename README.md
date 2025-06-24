@@ -99,7 +99,7 @@ Insert two values for those IDs in the csv file and rerun the join query to see 
 ### Streaming 
 
 Start producer of temperature data `TemperatureProducer`. This generates data in the form of 
-`{"city_id":1003,"temperature":19}` in a topic called `temperature_updates`
+`{"city_id":1003,"temperature":19, "ts", "2025-06-12T12:09:42""}` in a topic called `temperature_updates`
 
 Create mapping to the topic:
 ```sql
@@ -122,6 +122,7 @@ where
 ```
 
 #### Handling late events
+
 This allows you to specify a maximum event lag. Any event that arrives later than the maximum event lag is dropped.
 See: https://docs.hazelcast.com/hazelcast/5.5/sql/querying-streams#late-events
 
@@ -141,6 +142,8 @@ FROM
 ```
 
 #### Querying aggregations
+
+With the event lag handled, the following query shows average temperature per city_id, over 3 seconds
 
 ```sql
 SELECT
@@ -163,8 +166,6 @@ GROUP BY
 ```
 
 #### Federated join between table and streaming data
-Hazelcast’s SQL grammar doesn’t allow an arbitrary sub‐query as the TABLE argument to TUMBLE—it must be a named table or view. 
-The workaround is to first expose your joined stream as a view, then tumble over that view.
 
 Create an enriched, watermarked view that brings in the country for each event:
 
@@ -181,7 +182,7 @@ JOIN cities AS c
   ON tu.city_id = c.city_id;
 ```
 
-Run the 15 s tumbling‐window aggregation over that view:
+Run 15s tumbling‐window aggregation over that view:
 
 ```sql
 SELECT
