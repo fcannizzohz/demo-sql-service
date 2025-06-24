@@ -4,7 +4,10 @@
   <groupId>com.hazelcast.fcannizzohz</groupId>
   <artifactId>demo-sql-service</artifactId>
   <version>1.0-SNAPSHOT</version>
-  <name>HSBC Workshop</name>
+  <name>DEMO SQL Service</name>
+  <description>
+    Simple demo showcasing Hazelcast SQL service. The README shows the steps.
+  </description>
 
   <properties>
     <maven.compiler.target>21</maven.compiler.target>
