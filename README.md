@@ -1,6 +1,6 @@
 # SQL Demo
 
-This README walks through mapping, querying and CDC of **cities** and **temperatures** data using Hazelcast SQL.
+This README walks through mapping and querying of **cities** and **temperatures** data using Hazelcast SQL.
 
 ## Steps
 
