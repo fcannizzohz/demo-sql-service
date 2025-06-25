@@ -4,7 +4,10 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b499d4fe-4843-4ddb-94d5-c2ca3dd644e3" name="Changes" comment="" />
+    <list default="true" id="b499d4fe-4843-4ddb-94d5-c2ca3dd644e3" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -17,6 +20,9 @@
         <option value="Class" />
       </list>
     </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 6
@@ -37,7 +43,9 @@
     "Maven.hsbc-workshop [package].executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "last_opened_file_path": "/Users/fcannizzo/work/offline/hsbc-workshop/src/test/java",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "/Users/fcannizzo/work/github-hz/demo-sql-service",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -147,7 +155,6 @@
         <item itemvalue="Application.ReadCitiesInUSA" />
         <item itemvalue="Application.ReadMap" />
         <item itemvalue="Application.InsertIntoCitiesMap" />
-        <item itemvalue="Application.LocalTradeStreamPipeline" />
         <item itemvalue="Application.TradeStreamPipeline" />
       </list>
     </recent_temporary>
@@ -169,6 +176,7 @@
       <updated>1750344507312</updated>
       <workItem from="1750344508550" duration="1311000" />
       <workItem from="1750346062660" duration="29292000" />
+      <workItem from="1750855463514" duration="83000" />
     </task>
     <servers />
   </component>
