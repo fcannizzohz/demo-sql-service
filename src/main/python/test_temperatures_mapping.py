@@ -72,7 +72,7 @@ with engine.connect() as conn:
 
 print("⏺ SQLAlchemy SELECT mapping_name")
 with engine.connect() as conn:
-    result = conn.execute(text("SELECT mapping_name FROM information_schema.mappings"))
+    result = conn.execute(text("SELECT table_name FROM information_schema.mappings"))
     data = result.all()
     print(data)  # should match the list of tuples above
 
