@@ -4,45 +4,17 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b499d4fe-4843-4ddb-94d5-c2ca3dd644e3" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/demo-sql-service.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/dictionaries/project.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Dockerfile.superset" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/python/hazelcast_sqlalchemy/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/python/hazelcast_sqlalchemy/dbapi.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/python/hazelcast_sqlalchemy/dialect.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/python/requirements.txt" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/python/setup.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/python/test_temperatures_mapping.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/superset_home/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/jarRepositories.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/jarRepositories.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hsbc-workshop.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/City.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/City.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/InsertIntoCitiesMap.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/InsertIntoCitiesMap.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/SetupSeedData.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/SetupSeedData.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/TemperatureProducer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/TemperatureProducer.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/Utils.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/Utils.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/cities_data.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/cities_data.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/cities_mapping.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/cities_mapping.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/temperature_updates_mapping.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/temperature_updates_mapping.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/temperature_updates_ordered_view.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/temperature_updates_ordered_view.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/temperatures_enriched_view.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/temperatures_enriched_view.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/temperatures_mapping.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/temperatures_mapping.sql" afterDir="false" />
-    </list>
+    <list default="true" id="b499d4fe-4843-4ddb-94d5-c2ca3dd644e3" name="Changes" comment="removing .env from src control" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ChangesViewManager">
+    <option name="groupingKeys">
+      <option value="directory" />
+      <option value="repository" />
+    </option>
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -63,51 +35,51 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Application.InsertIntoCitiesMap.executor": "Run",
-    "Application.LocalTradeStreamPipeline.executor": "Run",
-    "Application.ReadCitiesInUSA.executor": "Run",
-    "Application.ReadMap.executor": "Run",
-    "Application.SetupSeedData$SetupCitiesData.executor": "Run",
-    "Application.SetupSeedData$SetupCitiesMapping.executor": "Run",
-    "Application.SetupSeedData$SetupCityMapping.executor": "Run",
-    "Application.SetupSeedData$SetupTemperatureUpdatesMapping.executor": "Run",
-    "Application.SetupSeedData$SetupTemperatureUpdatesOrderedView.executor": "Run",
-    "Application.SetupSeedData$SetupTemperaturesEnrichedView.executor": "Run",
-    "Application.SetupSeedData$SetupTemperaturesMapping.executor": "Run",
-    "Application.SetupSeedData.executor": "Run",
-    "Application.TemperatureProducer.executor": "Run",
-    "Application.Trade2StreamPipeline.executor": "Run",
-    "Maven.demo-sql-service [dependency:copy-dependencies...].executor": "Run",
-    "Maven.demo-sql-service [package].executor": "Run",
-    "Maven.hsbc-workshop [clean].executor": "Run",
-    "Maven.hsbc-workshop [package].executor": "Run",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "/Users/fcannizzo/work/github-hz/demo-sql-service/src/main/python/superset_sqlalchemy/tests",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "onboarding.tips.debug.path": "/Users/fcannizzo/work/github-hz/demo-sql-service/trino-hazelcast-jdbc/src/main/java/com/hazelcast/fcannizzohz/Main.java",
-    "project.structure.last.edited": "Modules",
-    "project.structure.proportion": "0.15",
-    "project.structure.side.proportion": "0.2",
-    "settings.build.tools.auto.reload": "ALL",
-    "settings.editor.selected.configurable": "MavenSettings",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.InsertIntoCitiesMap.executor&quot;: &quot;Run&quot;,
+    &quot;Application.LocalTradeStreamPipeline.executor&quot;: &quot;Run&quot;,
+    &quot;Application.ReadCitiesInUSA.executor&quot;: &quot;Run&quot;,
+    &quot;Application.ReadMap.executor&quot;: &quot;Run&quot;,
+    &quot;Application.SetupSeedData$SetupCitiesData.executor&quot;: &quot;Run&quot;,
+    &quot;Application.SetupSeedData$SetupCitiesMapping.executor&quot;: &quot;Run&quot;,
+    &quot;Application.SetupSeedData$SetupCityMapping.executor&quot;: &quot;Run&quot;,
+    &quot;Application.SetupSeedData$SetupTemperatureUpdatesMapping.executor&quot;: &quot;Run&quot;,
+    &quot;Application.SetupSeedData$SetupTemperatureUpdatesOrderedView.executor&quot;: &quot;Run&quot;,
+    &quot;Application.SetupSeedData$SetupTemperaturesEnrichedView.executor&quot;: &quot;Run&quot;,
+    &quot;Application.SetupSeedData$SetupTemperaturesMapping.executor&quot;: &quot;Run&quot;,
+    &quot;Application.SetupSeedData.executor&quot;: &quot;Run&quot;,
+    &quot;Application.TemperatureProducer.executor&quot;: &quot;Run&quot;,
+    &quot;Application.Trade2StreamPipeline.executor&quot;: &quot;Run&quot;,
+    &quot;Maven.demo-sql-service [dependency:copy-dependencies...].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.demo-sql-service [package].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.hsbc-workshop [clean].executor&quot;: &quot;Run&quot;,
+    &quot;Maven.hsbc-workshop [package].executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/fcannizzo/work/github-hz/demo-sql-service/src/main/python/superset_sqlalchemy/tests&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;onboarding.tips.debug.path&quot;: &quot;/Users/fcannizzo/work/github-hz/demo-sql-service/trino-hazelcast-jdbc/src/main/java/com/hazelcast/fcannizzohz/Main.java&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.build.tools.auto.reload&quot;: &quot;ALL&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;MavenSettings&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
-  "keyToStringList": {
-    "DatabaseDriversLRU": [
-      "java.sql.Driver"
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;java.sql.Driver&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/src/main/python/superset_sqlalchemy/tests" />
@@ -244,7 +216,65 @@
       <workItem from="1752756014799" duration="115000" />
       <workItem from="1753008543613" duration="1162000" />
       <workItem from="1753081657209" duration="37425000" />
+      <workItem from="1753205138798" duration="394000" />
     </task>
+    <task id="LOCAL-00001" summary="added ignored directories">
+      <option name="closed" value="true" />
+      <created>1753205342786</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1753205342786</updated>
+    </task>
+    <task id="LOCAL-00002" summary="using better json serialization">
+      <option name="closed" value="true" />
+      <created>1753205396138</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1753205396138</updated>
+    </task>
+    <task id="LOCAL-00003" summary="added SQLAlchemy wrapper to sql python client">
+      <option name="closed" value="true" />
+      <created>1753205435382</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1753205435382</updated>
+    </task>
+    <task id="LOCAL-00004" summary="fixed instructions by removing dup and moving sql to files">
+      <option name="closed" value="true" />
+      <created>1753205477724</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1753205477724</updated>
+    </task>
+    <task id="LOCAL-00005" summary="added to persist the supersed db">
+      <option name="closed" value="true" />
+      <created>1753205492910</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1753205492910</updated>
+    </task>
+    <task id="LOCAL-00006" summary="changes to project structure">
+      <option name="closed" value="true" />
+      <created>1753205509479</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1753205509479</updated>
+    </task>
+    <task id="LOCAL-00007" summary="removing .env from src control">
+      <option name="closed" value="true" />
+      <created>1753205528188</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1753205528188</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -260,6 +290,16 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="added ignored directories" />
+    <MESSAGE value="using better json serialization" />
+    <MESSAGE value="added SQLAlchemy wrapper to sql python client" />
+    <MESSAGE value="fixed instructions by removing dup and moving sql to files" />
+    <MESSAGE value="added to persist the supersed db" />
+    <MESSAGE value="changes to project structure" />
+    <MESSAGE value="removing .env from src control" />
+    <option name="LAST_COMMIT_MESSAGE" value="removing .env from src control" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
