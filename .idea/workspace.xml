@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b499d4fe-4843-4ddb-94d5-c2ca3dd644e3" name="Changes" comment="removing .env from src control" />
+    <list default="true" id="b499d4fe-4843-4ddb-94d5-c2ca3dd644e3" name="Changes" comment="updated" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -216,7 +216,7 @@
       <workItem from="1752756014799" duration="115000" />
       <workItem from="1753008543613" duration="1162000" />
       <workItem from="1753081657209" duration="37425000" />
-      <workItem from="1753205138798" duration="394000" />
+      <workItem from="1753205138798" duration="836000" />
     </task>
     <task id="LOCAL-00001" summary="added ignored directories">
       <option name="closed" value="true" />
@@ -274,7 +274,15 @@
       <option name="project" value="LOCAL" />
       <updated>1753205528188</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="updated">
+      <option name="closed" value="true" />
+      <created>1753205596340</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1753205596340</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -299,7 +307,8 @@
     <MESSAGE value="added to persist the supersed db" />
     <MESSAGE value="changes to project structure" />
     <MESSAGE value="removing .env from src control" />
-    <option name="LAST_COMMIT_MESSAGE" value="removing .env from src control" />
+    <MESSAGE value="updated" />
+    <option name="LAST_COMMIT_MESSAGE" value="updated" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
