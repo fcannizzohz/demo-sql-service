@@ -61,6 +61,24 @@ services:
     depends_on:
       - zoo1
 
+  superset:
+    build:
+      context: .
+      dockerfile: Dockerfile.superset
+    container_name: superset
+    ports:
+      - "8088:8088"
+    environment:
+      - SUPERSET_SECRET_KEY=supersecret
+    volumes:
+      # Mount your local ./superset_home into the container
+      - ./superset_home:/app/superset_home
+    command: >
+      /bin/bash -c "
+        superset db upgrade &&
+        superset init &&
+        superset run -h 0.0.0.0 -p 8088"
+
 networks:
   default:
     name: hazelcast-net

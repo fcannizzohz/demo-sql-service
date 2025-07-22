@@ -1,4 +1,5 @@
-CREATE OR REPLACE MAPPING cities (
+CREATE
+OR REPLACE MAPPING cities (
      __key     INT,
      city_id   INT,
      country   VARCHAR,

@@ -1,0 +1,11 @@
+FROM apache/superset:latest
+
+USER root
+
+# Copy your dialect package into the image
+COPY src/main/python /opt/hazelcast_sqlalchemy
+
+# Install it (and its dependencies) into Superset’s venv
+RUN pip install --no-cache-dir /opt/hazelcast_sqlalchemy
+
+USER superset
