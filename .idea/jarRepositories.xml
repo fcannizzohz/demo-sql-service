@@ -26,5 +26,10 @@
       <option name="name" value="Hazelcast Private Release Repository" />
       <option name="url" value="https://repository.hazelcast.com/release/" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="hazelcast-release" />
+      <option name="name" value="Hazelcast Repository" />
+      <option name="url" value="https://repository.hazelcast.com/release/" />
+    </remote-repository>
   </component>
 </project>

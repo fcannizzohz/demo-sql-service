@@ -5,8 +5,39 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b499d4fe-4843-4ddb-94d5-c2ca3dd644e3" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/demo-sql-service.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/dictionaries/project.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Dockerfile.superset" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/python/hazelcast_sqlalchemy/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/python/hazelcast_sqlalchemy/dbapi.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/python/hazelcast_sqlalchemy/dialect.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/python/requirements.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/python/setup.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/python/test_temperatures_mapping.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/superset_home/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/jarRepositories.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/jarRepositories.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hsbc-workshop.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/City.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/City.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/InsertIntoCitiesMap.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/InsertIntoCitiesMap.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/SetupSeedData.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/SetupSeedData.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/TemperatureProducer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/TemperatureProducer.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/Utils.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/Utils.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/cities_data.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/cities_data.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/cities_mapping.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/cities_mapping.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/temperature_updates_mapping.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/temperature_updates_mapping.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/temperature_updates_ordered_view.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/temperature_updates_ordered_view.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/temperatures_enriched_view.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/temperatures_enriched_view.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/temperatures_mapping.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/temperatures_mapping.sql" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -38,21 +69,34 @@
     "Application.LocalTradeStreamPipeline.executor": "Run",
     "Application.ReadCitiesInUSA.executor": "Run",
     "Application.ReadMap.executor": "Run",
+    "Application.SetupSeedData$SetupCitiesData.executor": "Run",
+    "Application.SetupSeedData$SetupCitiesMapping.executor": "Run",
+    "Application.SetupSeedData$SetupCityMapping.executor": "Run",
+    "Application.SetupSeedData$SetupTemperatureUpdatesMapping.executor": "Run",
+    "Application.SetupSeedData$SetupTemperatureUpdatesOrderedView.executor": "Run",
+    "Application.SetupSeedData$SetupTemperaturesEnrichedView.executor": "Run",
+    "Application.SetupSeedData$SetupTemperaturesMapping.executor": "Run",
+    "Application.SetupSeedData.executor": "Run",
+    "Application.TemperatureProducer.executor": "Run",
     "Application.Trade2StreamPipeline.executor": "Run",
+    "Maven.demo-sql-service [dependency:copy-dependencies...].executor": "Run",
+    "Maven.demo-sql-service [package].executor": "Run",
     "Maven.hsbc-workshop [clean].executor": "Run",
     "Maven.hsbc-workshop [package].executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "git-widget-placeholder": "main",
-    "last_opened_file_path": "/Users/fcannizzo/work/github-hz/demo-sql-service",
+    "last_opened_file_path": "/Users/fcannizzo/work/github-hz/demo-sql-service/src/main/python/superset_sqlalchemy/tests",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
+    "onboarding.tips.debug.path": "/Users/fcannizzo/work/github-hz/demo-sql-service/trino-hazelcast-jdbc/src/main/java/com/hazelcast/fcannizzohz/Main.java",
     "project.structure.last.edited": "Modules",
-    "project.structure.proportion": "0.0",
+    "project.structure.proportion": "0.15",
     "project.structure.side.proportion": "0.2",
     "settings.build.tools.auto.reload": "ALL",
     "settings.editor.selected.configurable": "MavenSettings",
@@ -66,17 +110,23 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/main/python/superset_sqlalchemy/tests" />
       <recent name="$PROJECT_DIR$/src/test/java" />
       <recent name="$PROJECT_DIR$" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+      <recent name="$PROJECT_DIR$/src/main/python" />
+      <recent name="$PROJECT_DIR$/src/main/python/superset_sqlalchemy" />
     </key>
     <key name="CopyClassDialog.RECENTS_KEY">
       <recent name="com.hazelcast.fcannizzohz" />
     </key>
   </component>
-  <component name="RunManager" selected="Application.ReadCitiesInUSA">
-    <configuration name="InsertIntoCitiesMap" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="com.hazelcast.fcannizzohz.InsertIntoCitiesMap" />
-      <module name="hsbc-workshop" />
+  <component name="RunManager" selected="Application.SetupSeedData$SetupTemperaturesEnrichedView">
+    <configuration name="SetupSeedData$SetupCitiesData" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="com.hazelcast.fcannizzohz.SetupSeedData$SetupCitiesData" />
+      <module name="demo-sql-service" />
       <extension name="coverage">
         <pattern>
           <option name="PATTERN" value="com.hazelcast.fcannizzohz.*" />
@@ -87,9 +137,9 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration name="ReadCitiesInUSA" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="com.hazelcast.fcannizzohz.ReadCitiesInUSA" />
-      <module name="hsbc-workshop" />
+    <configuration name="SetupSeedData$SetupTemperatureUpdatesMapping" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="com.hazelcast.fcannizzohz.SetupSeedData$SetupTemperatureUpdatesMapping" />
+      <module name="demo-sql-service" />
       <extension name="coverage">
         <pattern>
           <option name="PATTERN" value="com.hazelcast.fcannizzohz.*" />
@@ -100,9 +150,9 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration name="ReadMap" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="com.hazelcast.fcannizzohz.ReadMap" />
-      <module name="hsbc-workshop" />
+    <configuration name="SetupSeedData$SetupTemperatureUpdatesOrderedView" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="com.hazelcast.fcannizzohz.SetupSeedData$SetupTemperatureUpdatesOrderedView" />
+      <module name="demo-sql-service" />
       <extension name="coverage">
         <pattern>
           <option name="PATTERN" value="com.hazelcast.fcannizzohz.*" />
@@ -113,9 +163,22 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration name="TradeStreamPipeline" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="com.hazelcast.fcannizzohz.TradeStreamPipeline" />
-      <module name="hsbc-workshop" />
+    <configuration name="SetupSeedData$SetupTemperaturesEnrichedView" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="com.hazelcast.fcannizzohz.SetupSeedData$SetupTemperaturesEnrichedView" />
+      <module name="demo-sql-service" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.hazelcast.fcannizzohz.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="SetupSeedData$SetupTemperaturesMapping" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="com.hazelcast.fcannizzohz.SetupSeedData$SetupTemperaturesMapping" />
+      <module name="demo-sql-service" />
       <extension name="coverage">
         <pattern>
           <option name="PATTERN" value="com.hazelcast.fcannizzohz.*" />
@@ -152,18 +215,19 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Application.ReadCitiesInUSA" />
-        <item itemvalue="Application.ReadMap" />
-        <item itemvalue="Application.InsertIntoCitiesMap" />
-        <item itemvalue="Application.TradeStreamPipeline" />
+        <item itemvalue="Application.SetupSeedData$SetupTemperaturesEnrichedView" />
+        <item itemvalue="Application.SetupSeedData$SetupTemperatureUpdatesOrderedView" />
+        <item itemvalue="Application.SetupSeedData$SetupTemperatureUpdatesMapping" />
+        <item itemvalue="Application.SetupSeedData$SetupTemperaturesMapping" />
+        <item itemvalue="Application.SetupSeedData$SetupCitiesData" />
       </list>
     </recent_temporary>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-9823dce3aa75-fbdcb00ec9e3-intellij.indexing.shared.core-IU-251.26094.121" />
-        <option value="bundled-js-predefined-d6986cc7102b-b26f3e71634d-JavaScript-IU-251.26094.121" />
+        <option value="bundled-jdk-9823dce3aa75-fbdcb00ec9e3-intellij.indexing.shared.core-IU-251.26927.53" />
+        <option value="bundled-js-predefined-d6986cc7102b-09060db00ec0-JavaScript-IU-251.26927.53" />
       </set>
     </attachedChunks>
   </component>
@@ -177,10 +241,35 @@
       <workItem from="1750344508550" duration="1311000" />
       <workItem from="1750346062660" duration="29292000" />
       <workItem from="1750855463514" duration="83000" />
+      <workItem from="1752756014799" duration="115000" />
+      <workItem from="1753008543613" duration="1162000" />
+      <workItem from="1753081657209" duration="37425000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/trino-hazelcast-jdbc/src/main/java/com/hazelcast/fcannizzohz/Main.java</url>
+          <line>13</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
