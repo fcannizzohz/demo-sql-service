@@ -1,20 +1,16 @@
 package com.hazelcast.fcannizzohz;
 
-public record City(Integer city_id, String country, String name, Integer population) {
-    private static String escape(String s) {
-        if (s == null) {
-            return "";
-        }
-        return s.replace("\\", "\\\\").replace("\"", "\\\"");
-    }
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-    /**
-     * Serialize this City into a JSON string:
-     * {"country":"…","name":"…"}
-     */
+public record City(Integer city_id, String country, String name, Integer population, Double latitude, Double longitude) {
+    private static final ObjectMapper mapper = new ObjectMapper();
+
     public String toJson() {
-        // Basic escaping of backslashes and quotes
-        return String.format("{\"city_id\":%d, \"country\":\"%s\",\"name\":\"%s\", \"population\":%d}", city_id, escape(country), escape(name),
-                population);
+        try {
+            return mapper.writeValueAsString(this);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize City to JSON", e);
+        }
     }
 }

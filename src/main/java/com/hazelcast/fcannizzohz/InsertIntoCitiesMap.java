@@ -15,7 +15,7 @@ public class InsertIntoCitiesMap {
             IMap<Integer, HazelcastJsonValue> citiesMap = client.getMap("cities");
 
             // 2) Build your JSON payload
-            City rome = new City(2001, "Italy", "Rome", 4_223_885);
+            City rome = new City(2001, "Italy", "Rome", 4_223_885, 41.9028, 12.4964);
 
             // 3) Wrap it in HazelcastJsonValue
             HazelcastJsonValue jsonValue = new HazelcastJsonValue(rome.toJson());
@@ -24,7 +24,7 @@ public class InsertIntoCitiesMap {
             System.out.println("Inserted JSON under key=" + key + ": " + rome);
 
             // 4) Put directly into the map
-            City milan = new City(2002, "Italy", "Milan", 1_371_499);
+            City milan = new City(2002, "Italy", "Milan", 1_371_499, 45.4642, 9.1900);
             IMap<Integer, City> citiesMap2 = client.getMap("cities");
             citiesMap2.put(201, milan);
             System.out.println("Inserted JSON under key=" + key + ": " + milan + "\n");
@@ -40,8 +40,6 @@ public class InsertIntoCitiesMap {
                     System.out.println(" - " + cityName + "\t(" + population + ")");
                 }
             }
-
-
         });
     }
 }
