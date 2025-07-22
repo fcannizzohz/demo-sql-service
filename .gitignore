@@ -1,1 +1,5 @@
 target/
+drivers/
+.venv/
+superset_home/superset.db
+*.egg-info/
