@@ -20,9 +20,10 @@ class Cursor:
 
     def execute(self, statement, parameters=None):
         timeout_secs = getattr(self, "_timeout", 30)
+        ## ignoring parameters for now
         try:
             self._result = self._client.sql.execute(
-                statement,
+                sql=statement,
                 timeout=timeout_secs
             ).result()
         except Exception as e:
@@ -48,8 +49,7 @@ class Cursor:
         return tuple(row)
 
     def fetchmany(self, size=None):
-        """Return up to size rows (default: self.arraysize)"""
-        n = size or self.arraysize
+        n = size or getattr(self, "arraysize", 1)
         rows = []
         for _ in range(n):
             row = self.fetchone()

@@ -10,7 +10,7 @@ from sqlalchemy import text
 class HazelcastDialect(default.DefaultDialect):
     name = "hazelcast"
     driver = "python"
-    paramstyle = "pyformat"
+    paramstyle = "qmark"
 
     supports_statement_cache = True
 
