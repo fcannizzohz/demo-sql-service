@@ -5,6 +5,7 @@ SQLAlchemy dialect for Hazelcast Python client.
 
 from sqlalchemy.engine import default
 from sqlalchemy import types as sqltypes
+from sqlalchemy import text
 
 class HazelcastDialect(default.DefaultDialect):
     name = "hazelcast"

@@ -1,13 +1,17 @@
-import time
-import hazelcast
 from sqlalchemy import create_engine, text
 
-client = hazelcast.HazelcastClient(cluster_members=[f"127.0.0.1:5701"])
-# Give Hazelcast a moment to finish startup
-result = client.sql.execute("SELECT * FROM temperature_enriched").result()
-for row in result:
-    city_id = row["city_id"]
-    temperature = row["temperature"]
-    print(f"city_id: {city_id}, temperature: {temperature}")
+# 5️⃣ Now test via SQLAlchemy + your hazelcast_sqlalchemy dialect
+engine = create_engine(f"hazelcast+python://127.0.0.1:5701?timeout=10")
 
-client.shutdown()
+print("⏺ SQLAlchemy streaming SELECT")
+with engine.connect() as conn:
+    # 1) Enable streaming on the connection
+    stream = conn.execution_options(stream_results=True) \
+        .execute(text("SELECT * FROM temperature_enriched"))
+
+    # 2) Iterate as rows arrive
+    for row in stream:
+        print(row)        # each `row` is a tuple
+
+    # never reached - block with CTRL-C
+    stream.close()
