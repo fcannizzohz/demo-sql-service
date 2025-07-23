@@ -3,9 +3,9 @@ FROM apache/superset:latest
 USER root
 
 # Copy your dialect package into the image
-COPY src/main/python /opt/hazelcast_sqlalchemy
+COPY ./sql-alchemy-hz-dialect /opt/sql-alchemy-hz-dialect
 
 # Install it (and its dependencies) into Superset’s venv
-RUN pip install --no-cache-dir /opt/hazelcast_sqlalchemy
+RUN pip install --no-cache-dir /opt/sql-alchemy-hz-dialect
 
 USER superset
