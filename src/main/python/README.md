@@ -1,7 +1,7 @@
 # Very basic SQLAlchemy wrapper
 
-1. python -mvenv .venv
-2. cd src/main/python
+1. cd src/main/python
+2. python -mvenv .venv
 3. pip install -r requirements.txt
 4. pip install -e .
 5. python ./test_temperature_mapping.py

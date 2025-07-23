@@ -64,15 +64,15 @@ with engine.connect() as conn:
     data = result.all()
     print(data)  # should match the list of tuples above
 
-print("⏺ SQLAlchemy SELECT schema_name")
+print("⏺ SQLAlchemy SELECT tables")
 with engine.connect() as conn:
-    result = conn.execute(text("SELECT schema_name FROM information_schema"))
+    result = conn.execute(text("SELECT table_name FROM information_schema.mappings"))
     data = result.all()
     print(data)  # should match the list of tuples above
 
-print("⏺ SQLAlchemy SELECT mapping_name")
+print("⏺ SQLAlchemy SELECT views")
 with engine.connect() as conn:
-    result = conn.execute(text("SELECT table_name FROM information_schema.mappings"))
+    result = conn.execute(text("SELECT table_name FROM information_schema.views"))
     data = result.all()
     print(data)  # should match the list of tuples above
 
