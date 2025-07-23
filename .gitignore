@@ -7,4 +7,6 @@ superset_home/.*
 .env
 __pycache__
 __pycache__/*.pyc
+.idea/workspace.xml
+
 
