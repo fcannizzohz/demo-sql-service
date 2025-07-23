@@ -91,7 +91,7 @@ services:
     command:
       - "com.hazelcast.fcannizzohz.TemperatureProducerCmd" # Class to run the main() of
       - "--bootstrap"
-      - "kafka1:9092" # pass the kafka endpoint
+      - "kafka1:19092" # pass the kafka endpoint (see listeners port in the kafka container
       - "--cluster"
       - "dev" # pass the hz clusterName
       - "--member"

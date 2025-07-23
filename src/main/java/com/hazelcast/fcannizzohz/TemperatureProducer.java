@@ -1,6 +1,7 @@
 package com.hazelcast.fcannizzohz;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
 import java.time.Instant;
@@ -31,13 +32,19 @@ public class TemperatureProducer implements AutoCloseable {
         System.out.println("Found city IDs: " +  cityIds);
 
         Properties props = new Properties();
-        props.put("bootstrap.servers", bootstrap);
-        props.put("key.serializer", StringSerializer.class.getName());
-        props.put("value.serializer", StringSerializer.class.getName());
-        props.put("client.id", "temp-producer");
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.CLIENT_ID_CONFIG, "temp-producer");
+        // How long to wait for the broker to acknowledge (default 30 000 ms)
+        props.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 5_000);
+        // Upper bound on total time to send a record (including retries; default 120 000 ms)
+        props.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 10_000);
+        // How long send() will block if buffer is full (default 60 000 ms)
+        props.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 5_000);
 
         try (TemperatureProducer prod = new TemperatureProducer(props, cityIds)) {
-            System.out.println("Streaming started. Ctrl+C to exit.");
+            System.out.println("Streaming started on '" + prod.topic + "'. Ctrl+C to exit.");
             Thread.currentThread().join();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -60,7 +67,7 @@ public class TemperatureProducer implements AutoCloseable {
 
                 String json = String.format("{\"city_id\":%d,\"temperature\":%d,\"ts\":\"%s\"}",
                         cityId, temp, now);
-
+                System.out.println("Sending '" + json + "' to topic " + topic);
                 producer.send(new ProducerRecord<>(topic, Integer.toString(cityId), json),
                         (meta, ex) -> {
                             if (ex == null) {

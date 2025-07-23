@@ -5,26 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b499d4fe-4843-4ddb-94d5-c2ca3dd644e3" name="Changes" comment="fixed python test">
-      <change afterPath="$PROJECT_DIR$/Dockerfile.demo" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/Context.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/TemperatureProducerCmd.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/compiler.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/demo-sql-service.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/demo-sql-service.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/InsertIntoCitiesMap.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/InsertIntoCitiesMap.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/ReadData.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/ReadData.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/SetupSeedData.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/SetupSeedData.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/TemperatureProducer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/TemperatureProducer.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/Utils.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/Utils.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/python/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/python/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/python/hazelcast_sqlalchemy/dbapi.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/python/hazelcast_sqlalchemy/dbapi.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/python/hazelcast_sqlalchemy/dialect.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/python/hazelcast_sqlalchemy/dialect.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/python/test_temperatures_mapping.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/python/test_temperatures_mapping.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/temperature_updates_ordered_view.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/temperature_updates_ordered_view.sql" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -235,7 +218,7 @@
       <workItem from="1753008543613" duration="1162000" />
       <workItem from="1753081657209" duration="37425000" />
       <workItem from="1753205138798" duration="866000" />
-      <workItem from="1753257429291" duration="12421000" />
+      <workItem from="1753257429291" duration="13759000" />
     </task>
     <task id="LOCAL-00001" summary="added ignored directories">
       <option name="closed" value="true" />
@@ -345,6 +328,11 @@
           <url>file://$PROJECT_DIR$/trino-hazelcast-jdbc/src/main/java/com/hazelcast/fcannizzohz/Main.java</url>
           <line>13</line>
           <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/com/hazelcast/fcannizzohz/TemperatureProducerCmd.java</url>
+          <line>31</line>
+          <option name="timeStamp" value="4" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
