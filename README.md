@@ -76,7 +76,9 @@ Every time new temperatures are inserted on cities that don't have it, by extend
 
 ### Streaming 
 
-Start producer of temperature data `TemperatureProducer`. This generates data in the form of 
+The class `TemperatureProducer` produces random temperatures for a list of city IDs. Run it via its `main()`.
+
+This generates data in the form of
 `{"city_id":1003,"temperature":19, "ts", "2025-06-12T12:09:42""}` in a topic called `temperature_updates`
 
 Create mapping to the topic by running the [Temperature Updates Mapping](./src/main/resources/temperature_updates_mapping.sql) SQL in Management Centre or by running `SetupSeedData$SetupTemperatureUpdatesMapping#main()`:
@@ -160,6 +162,16 @@ GROUP BY
     country;                         -- group by exactly the window bounds + country
 ```
 
+### Automatically run seed data and temperature producer
+
+The container `"temperatures_producer"`, automatically started in the compose file, generates all the mappings and data.
+
+This container is simply a wrapper for `com.hazelcast.fcannizzohz.TemperatureProducerCmd#main()` that connects to `kafka1:9092`,
+loads the available city IDs from the cluster (`hazelcast1:5701`) and then starts producing random temperatures for illustration purposes.
+
+Run it via `docker compose --profile producer up`.
+
+Build the code that runs in the container via `docker compose build temperatures_producer`.
 
 ### Visualize data via SQL query
 
@@ -185,7 +197,7 @@ To connect to hazelcast,
 1. go to `Settings\Database Connection` 
 2. Click on `+ DATABASE`
 3. Select `Other` in `Supported Databases` 
-4. In the `Basic` tab, set `Display Name` as Hazelcast the following connection string `hazelcast+python://hazelcast-1:5701`
+4. In the `Basic` tab, set `Display Name` as Hazelcast the following connection string `hazelcast+python://hazelcast1:5701`
 5. Hit `Test connection to validate.
 6. In the Advanced tab make sure you have the following selected in `SQL Lab`: `Allow DDL and DML`, `Allow this database to be explored`.
 

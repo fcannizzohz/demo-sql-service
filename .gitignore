@@ -2,6 +2,9 @@ target/
 drivers/
 .venv/
 superset_home/superset.db
+superset_home/.*
 *.egg-info
 .env
 __pycache__
+__pycache__/*.pyc
+

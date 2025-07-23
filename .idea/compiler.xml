@@ -8,6 +8,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="hsbc-workshop" />
+        <module name="demo-sql-service" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>

@@ -32,7 +32,7 @@ public class ReadData {
                     System.out.println(" - " + cityName + ", " + country + " (" + population + ")");
                 }
             }
-        });
+        }, Context.DEV_LOCALHOST);
     }
 
 }

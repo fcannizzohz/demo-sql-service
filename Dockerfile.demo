@@ -1,0 +1,15 @@
+# Dockerfile
+FROM maven:3.9.11-eclipse-temurin-24 AS builder
+WORKDIR /app
+# copy only pom+src to leverage build cache
+COPY pom.xml .
+COPY src ./src
+RUN /usr/bin/mvn -B clean package
+
+FROM eclipse-temurin:24-jre
+WORKDIR /app
+COPY --from=builder /app/target/*.jar /app/demo-sql-service.jar
+COPY --from=builder /app/target/dependency/ /app/lib/
+COPY --from=builder /app/src/main/resources /app/src/main/resources
+
+ENTRYPOINT ["java","-cp","/app/lib/*:/app/demo-sql-service.jar"]

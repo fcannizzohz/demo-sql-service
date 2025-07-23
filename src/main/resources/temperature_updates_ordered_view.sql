@@ -4,8 +4,8 @@ SELECT *
 FROM
     TABLE(
             IMPOSE_ORDER(
-                TABLE temperature_updates, -- (1)
-                DESCRIPTOR (ts), -- (2)
-                INTERVAL '5' SECOND -- (3)
+                TABLE temperature_updates,
+                DESCRIPTOR (ts),
+                INTERVAL '5' SECOND
             )
     );

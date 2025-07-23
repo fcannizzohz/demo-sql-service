@@ -1,5 +1,5 @@
 services:
-  hazelcast-1:
+  hazelcast1:
     image: hazelcast/hazelcast:latest
     ports:
       - "5701:5701"
@@ -7,15 +7,15 @@ services:
       - ./src/main/resources:/home/hazelcast/data
     environment:
       - HZ_NETWORK_JOIN_TCP_IP_ENABLED=true
-      - HZ_NETWORK_JOIN_TCP_IP_MEMBERS=hazelcast-1,hazelcast-2
+      - HZ_NETWORK_JOIN_TCP_IP_MEMBERS=hazelcast1,hazelcast2
 
-  hazelcast-2:
+  hazelcast2:
     image: hazelcast/hazelcast:latest
     volumes:
       - ./src/main/resources:/home/hazelcast/data
     environment:
       - HZ_NETWORK_JOIN_TCP_IP_ENABLED=true
-      - HZ_NETWORK_JOIN_TCP_IP_MEMBERS=hazelcast-1,hazelcast-2
+      - HZ_NETWORK_JOIN_TCP_IP_MEMBERS=hazelcast1,hazelcast2
 
   management-center:
     image: hazelcast/management-center:latest
@@ -23,7 +23,7 @@ services:
     - "8080:8080"
     environment:
     - MC_DEFAULT_CLUSTER=dev
-    - MC_DEFAULT_CLUSTER_MEMBERS=hazelcast-1,hazelcast-2
+    - MC_DEFAULT_CLUSTER_MEMBERS=hazelcast1,hazelcast2
 
   zoo1:
     image: confluentinc/cp-zookeeper:7.8.0
@@ -78,6 +78,25 @@ services:
         superset db upgrade &&
         superset init &&
         superset run -h 0.0.0.0 -p 8088"
+
+  temperatures_producer:
+    profiles: ["producer"]
+    build:
+      context: .
+      dockerfile: Dockerfile.demo
+    image: demo-sql-service-java
+    depends_on:
+      - kafka1
+      - hazelcast1
+    command:
+      - "com.hazelcast.fcannizzohz.TemperatureProducerCmd" # Class to run the main() of
+      - "--bootstrap"
+      - "kafka1:9092" # pass the kafka endpoint
+      - "--cluster"
+      - "dev" # pass the hz clusterName
+      - "--member"
+      - "hazelcast1:5701" # pass the hz member address
+      - "--seed" # generates automatically seed data and mappings
 
 networks:
   default:

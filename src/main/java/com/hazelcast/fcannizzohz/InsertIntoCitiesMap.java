@@ -40,6 +40,6 @@ public class InsertIntoCitiesMap {
                     System.out.println(" - " + cityName + "\t(" + population + ")");
                 }
             }
-        });
+        }, Context.DEV_LOCALHOST);
     }
 }

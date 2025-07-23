@@ -27,18 +27,18 @@ public final class Utils {
         }
     }
 
-    static void executeOnClientAndShutdown(Consumer<HazelcastInstance> consumer) {
+    static void executeOnClientAndShutdown(Consumer<HazelcastInstance> consumer, Context context) {
         executeOnClientAndShutdown((Function<HazelcastInstance, Void>) hazelcastInstance -> {
             consumer.accept(hazelcastInstance);
             return null;
-        });
+        }, context);
     }
 
-    static <T> T executeOnClientAndShutdown(Function<HazelcastInstance, T> function) {
+    static <T> T executeOnClientAndShutdown(Function<HazelcastInstance, T> function, Context context) {
         ClientConfig cfg = new ClientConfig();
-        cfg.setClusterName("dev");                  // default for hazelcast/hazelcast:latest
+        cfg.setClusterName(context.clusterName());                  // default for hazelcast/hazelcast:latest
         ClientNetworkConfig net = cfg.getNetworkConfig();
-        net.addAddress("127.0.0.1:5701");           // point at your Docker container
+        net.addAddress(context.memberAddress());           // point at your Docker container
 
         HazelcastInstance client = HazelcastClient.newHazelcastClient(cfg);
         try {
