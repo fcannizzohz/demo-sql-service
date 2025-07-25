@@ -82,26 +82,30 @@ class HazelcastDialect(default.DefaultDialect):
         """
         Return list of mapping names (tables) in a given schema.
         """
-        sch = schema or self.default_schema_name
-        result = connection.execute(text(
-            "SELECT table_name FROM information_schema.mappings "
-            "WHERE table_schema = :schema"
-            "UNION"
-            "SELECT table_name FROM information_schema.tables "
-            "WHERE table_schema = :schema"
-        ), {"schema": sch})
-        return [row[0] for row in result.fetchall()]
+        try:
+            sch = schema or self.default_schema_name
+            result = connection.execute(text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema = :schema "
+            ), {"schema": sch})
+            return [row[0] for row in result.fetchall()]
+        except Exception as e:
+            print(e)
+            raise Exception(f"Unable to get table names for schema {schema}: {e}")
 
     def get_view_names(self, connection, schema=None, **kwargs):
         """
         Return list of mapping names (tables) in a given schema.
         """
-        sch = schema or self.default_schema_name
-        result = connection.execute(text(
-            "SELECT mapping_name FROM information_schema.views "
-            "WHERE table_schema = :schema"
-        ), {"schema": sch})
-        return [row[0] for row in result.fetchall()]
+        try:
+            sch = schema or self.default_schema_name
+            result = connection.execute(text(
+                "SELECT mapping_name FROM information_schema.views "
+                "WHERE table_schema = :schema"
+            ), {"schema": sch})
+            return [row[0] for row in result.fetchall()]
+        except Exception as e:
+            raise Exception(f"Unable to get table names for schema {schema}: {e}")
 
     def get_columns(self, connection, table_name, schema=None, **kwargs):
         """
