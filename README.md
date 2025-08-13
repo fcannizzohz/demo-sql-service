@@ -101,6 +101,40 @@ where
   temperature > 15
 ```
 
+#### Supporting non streaming clients
+
+Not all clients can support streaming SQL to perform operations like aggregations and joins. In this case, it's possible to put the 
+data in a map with:
+
+```sql
+CREATE
+OR REPLACE MAPPING current_temperatures (
+  __key INT,
+  city_id INT,
+  temperature INT,
+  ts TIMESTAMP
+) TYPE IMap OPTIONS (
+  'keyFormat' = 'int',
+  'valueFormat' = 'compact',
+  'valueCompactTypeName' = 'Temperature'
+);
+```
+
+and a new Hazelcast job that reacts to any new data in the stream and populates the map accordingly:
+
+```sql
+CREATE JOB current_temperatures AS SINK INTO current_temperatures
+SELECT
+    temperature_updates.city_id * 100000 AS __key,
+    temperature_updates.city_id as city_id,
+    temperature_updates.temperature as temperature,
+    temperature_updates.ts as ts
+FROM
+    temperature_updates;
+```
+
+Now, every time a new temperature data is streamed, the respective entry in `temperatures_streamed_map` is upserted.
+
 #### Handling late events
 
 This allows you to specify a maximum event lag. Any event that arrives later than the maximum event lag is dropped.
@@ -202,4 +236,34 @@ To connect to hazelcast,
 6. In the Advanced tab make sure you have the following selected in `SQL Lab`: `Allow DDL and DML`, `Allow this database to be explored`.
 
 Hit finish to save the settings.
+
+#### Checking the schema
+
+When correctly configured, go to `SQL\SQL Lab` and run the following query:
+
+```sql
+SELECT table_name FROM information_schema.mappings
+WHERE table_schema = 'public'
+```
+
+The output should look like:
+
+|table_name|
+|---|
+|temperature_updates|
+|cities|
+|temperatures|
+|current_temperatures|
+
+- `temperature_updates` is the streaming mapping with temperature updates coming from the producer. Since the producer is emitting data every second, the query `select * from temperature_updates limit 10` should return within 10s to display the latest temperatures received
+- `cities` is the table referring to the mapping for the `cities` data
+- `temperatures` is the mapping referring to the `csv` file loaded from file
+- `current_temperatures` is the map populated by the `current_temperatures` job. The map is automatically upserted every time a new temperature is received from the producer via Kafka.
+
+With the above it's possible do demonstrate how to build a simple dashboard:
+
+![Demo dashboard](./sample_superset_dashboard.png)
+
+The file [dashboard_export.zip](./dashboard_export.zip) can be imported in Superset to recreate the dashboard.
+
 

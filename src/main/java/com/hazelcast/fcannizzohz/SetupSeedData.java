@@ -46,6 +46,26 @@ public class SetupSeedData {
         }
     }
 
+    static class SetupStreamedTemperaturesMapping {
+        static void run(Context context) {
+            runSQL("src/main/resources/current_temperatures_map.sql", context);
+        }
+
+        public static void main(String[] args) {
+            run(DEV_LOCALHOST);
+        }
+    }
+
+    static class SetupStreamedTemperaturesJob {
+        static void run(Context context) {
+            runSQL("src/main/resources/current_temperatures_job.sql", context);
+        }
+
+        public static void main(String[] args) {
+            run(DEV_LOCALHOST);
+        }
+    }
+
     static class SetupTemperatureUpdatesMapping {
         static void run(Context context) {
             runSQL("src/main/resources/temperature_updates_mapping.sql",  context);

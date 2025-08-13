@@ -40,6 +40,8 @@ public class TemperatureProducerCmd implements Runnable {
             SetupSeedData.SetupTemperatureUpdatesMapping.run(c);
             SetupSeedData.SetupTemperatureUpdatesOrderedView.run(c);
             SetupSeedData.SetupTemperaturesEnrichedView.run(c);
+            SetupSeedData.SetupStreamedTemperaturesMapping.run(c);
+            SetupSeedData.SetupStreamedTemperaturesJob.run(c);
         }
         TemperatureProducer.run(bootstrap, new Context(cluster, member));
     }
