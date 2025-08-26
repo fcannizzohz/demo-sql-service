@@ -1,86 +1,87 @@
-import atexit
 import hazelcast
 from typing import Optional, Tuple, Sequence, List
 
-_shared_client = None
-
 # PEP-249
 paramstyle = "qmark"
+
+class Warning(Exception): pass
 class Error(Exception): pass
+class InterfaceError(Error): pass
+class DatabaseError(Error): pass
+class DataError(DatabaseError): pass
+class OperationalError(DatabaseError): pass
+class IntegrityError(DatabaseError): pass
+class InternalError(DatabaseError): pass
+class ProgrammingError(DatabaseError): pass
+class NotSupportedError(DatabaseError): pass
 
 _DEFAULT_TIMEOUT = 30
 
 class Cursor:
-    def __init__(self, client):
-        self._client    = client
-        self._result    = None
-        self._iterator  = None
+    def __init__(self, client, timeout: Optional[float] = None):
+        self._client = client
+        self._result = None
+        self._iterator = None
         self.description = None
-        self.rowcount   = -1
-        self.arraysize  = 100  # default page size
+        self.rowcount = -1
+        self.arraysize = 100
+        self.lastrowid = None
+        self._timeout = timeout or _DEFAULT_TIMEOUT
 
     def execute(self, operation: str, parameters: Optional[Tuple] = None) -> None:
-        """
-        Bind any positional parameters (e.g. LIMIT ? OFFSET ?) and kick off execution,
-        but do NOT fetch all rows yet.
-        """
-        timeout_secs = getattr(self, "_timeout", _DEFAULT_TIMEOUT)
+        if self._result is not None:
+            self.close()
+
         params = parameters or ()
+        if isinstance(params, dict):
+            raise ProgrammingError("qmark paramstyle requires positional parameters (tuple/list)")
 
-        # HazSQL client wants varargs for parameters:
-        # e.g. .execute(sql, limit, offset, timeout=..., cursor_buffer_size=...)
         try:
-            self._result = (
-                self._client.sql
-                .execute(
-                    operation,
-                    *params,
-                    timeout=timeout_secs,
-                    cursor_buffer_size=self.arraysize
-                )
-                .result()
-            )
+            self._result = self._client.sql.execute(
+                operation, *params,
+                timeout=self._timeout,
+                cursor_buffer_size=self.arraysize
+            ).result()
         except Exception as e:
-            raise Error(f"Hazelcast execute failed: {e}") from e
+            raise DatabaseError(f"Hazelcast execute failed: {e}") from e
 
-        # Build cursor.description from metadata
         meta = self._result.get_row_metadata()
-        self.description = [
-            (col.name, None, None, None, None, None, None)
-            for col in meta.columns
+        self.description = None if meta is None else [
+            (col.name, None, None, None, None, None, None) for col in meta.columns
         ]
 
-        # Create the blocking iterator that fetches pages under the hood
-        self._iterator = iter(self._result)
-        self.rowcount = -1
+        uc = self._result.update_count()
+        self.rowcount = -1 if uc is None else uc
+
+        # Iterator after we know if it's a row-producing statement
+        self._iterator = iter(self._result) if self.description is not None else None
 
     def executemany(self, operation: str, seq_of_params: Sequence[Tuple]) -> None:
-        """
-        Run the same statement multiple times. Superset won't use this,
-        but PEP-249 expects it.
-        """
+        total = 0
+        last_desc = None
         for params in seq_of_params:
             self.execute(operation, params)
+            if self.rowcount != -1:
+                total += self.rowcount
+            last_desc = self.description
+            self.close()
+        self.description = last_desc
+        self.rowcount = total if total else -1
 
     def fetchone(self) -> Optional[Tuple]:
-        """
-        Return one row (tuple) or None when exhausted.
-        """
         if self._iterator is None:
-            raise Error("fetchone() called before execute()")
-
+            if self._result is None:
+                raise Error("fetchone() called before execute()")
+            # DML/DDL path: nothing to fetch
+            return None
         try:
             row = next(self._iterator)
+            return tuple(row)
         except StopIteration:
+            self.close()
             return None
 
-        return tuple(row)
-
     def fetchmany(self, size: Optional[int] = None) -> List[Tuple]:
-        """
-        Return up to `size` rows (default: self.arraysize).
-        Superset’s backend calls this repeatedly to page results.
-        """
         n = size or self.arraysize
         rows = []
         for _ in range(n):
@@ -91,58 +92,68 @@ class Cursor:
         return rows
 
     def fetchall(self) -> List[Tuple]:
-        """
-        Drain the remaining iterator.  Used if someone calls .all().
-        """
-        return list(self)
+        rows = []
+        while True:
+            r = self.fetchone()
+            if r is None:
+                break
+            rows.append(r)
+        return rows
 
     def __iter__(self):
         if self._iterator is None:
-            raise Error("__iter__ called before execute()")
+            raise Error("__iter__ called before execute() or statement does not return rows")
         return self
 
     def __next__(self):
-        row = self.fetchone()
-        if row is None:
+        r = self.fetchone()
+        if r is None:
             raise StopIteration
-        return row
+        return r
+
+    def setinputsizes(self, sizes): return None
+    def setoutputsize(self, size, column=None): return None
 
     def close(self) -> None:
-        """
-        Cursor close does not shut down the client.  Just free refs.
-        """
-        self._result   = None
-        self._iterator = None
+        try:
+            if self._result is not None:
+                try:
+                    self._result.close()
+                except Exception:
+                    pass
+        finally:
+            self._result = None
+            self._iterator = None
+            self.description = None
+            self.rowcount = -1
+
+    def __enter__(self): return self
+    def __exit__(self, exc_type, exc, tb): self.close()
 
 class Connection:
-    def __init__(self, client):
+    def __init__(self, client, default_timeout: Optional[float] = None):
         self._client = client
+        self._default_timeout = default_timeout
 
     def cursor(self):
-        return Cursor(self._client)
+        return Cursor(self._client, timeout=self._default_timeout)
 
     def commit(self): pass
     def rollback(self): pass
-    def close(self): pass  # keep the client alive
 
-def connect(
-        host: str,
-        port: int,
-        timeout: Optional[float] = None,
-        **kwargs
-) -> Connection:
-    """
-    Return a PEP-249 Connection wrapping a shared HazelcastClient.
-    """
-    global _shared_client
-    if _shared_client is None:
-        _shared_client = hazelcast.HazelcastClient(
-            cluster_members=[f"{host}:{port}"],
-            **{k:v for k,v in kwargs.items() if k != "timeout"}
-        )
-    return Connection(_shared_client)
+    def close(self):
+        if self._client is not None:
+            try:
+                self._client.shutdown()
+            finally:
+                self._client = None
 
-@atexit.register
-def _shutdown_client():
-    if _shared_client:
-        _shared_client.shutdown()
+    def __enter__(self): return self
+    def __exit__(self, exc_type, exc, tb): self.close()
+
+def connect(host: str, port: int, timeout: Optional[float] = None, **kwargs) -> Connection:
+    client = hazelcast.HazelcastClient(
+        cluster_members=[f"{host}:{port}"],
+        **{k: v for k, v in kwargs.items() if k != "timeout"}
+    )
+    return Connection(client, default_timeout=timeout)
