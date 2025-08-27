@@ -1,8 +1,3 @@
-# hazelcast_sqlalchemy/dialect.py
-"""
-SQLAlchemy dialect for Hazelcast Python client.
-"""
-
 from sqlalchemy.engine import default
 from sqlalchemy import types as sqltypes
 from sqlalchemy import text
@@ -12,23 +7,25 @@ class HazelcastDialect(default.DefaultDialect):
     driver = "python"
     paramstyle = "qmark"
 
+    # Capabilities
     supports_statement_cache = True
-
     supports_sane_rowcount = True
-    supports_native_boolean = True
     supports_sane_multi_rowcount = True
+    supports_native_boolean = True
+    supports_native_decimal = True
+
     default_schema_name = "public"
 
     ischema_names = {
         "BOOLEAN": sqltypes.Boolean,
-        "TINYINT": sqltypes.SmallInteger,  # or custom
+        "TINYINT": sqltypes.SmallInteger,
         "SMALLINT": sqltypes.SmallInteger,
         "INTEGER": sqltypes.Integer,
         "INT": sqltypes.Integer,
         "BIGINT": sqltypes.BigInteger,
-        "REAL": sqltypes.Float,      # or sqltypes.REAL
+        "REAL": sqltypes.Float,
         "FLOAT": sqltypes.Float,
-        "DOUBLE": sqltypes.Float,    # SA Float maps to DOUBLE PRECISION by default
+        "DOUBLE": sqltypes.Float,
         "DECIMAL": sqltypes.Numeric,
         "NUMERIC": sqltypes.Numeric,
         "VARCHAR": sqltypes.String,
@@ -37,38 +34,28 @@ class HazelcastDialect(default.DefaultDialect):
         "DATE": sqltypes.Date,
         "TIME": sqltypes.Time,
         "TIMESTAMP": sqltypes.TIMESTAMP,
-        # Add more Hazelcast types here as needed (OBJECT, JSON?, UUID?)
     }
 
     @classmethod
     def import_dbapi(cls):
-        """
-        Return the DBAPI module that implements .connect(), Cursor, etc.
-        """
         import hazelcast_sqlalchemy.dbapi as dbapi_module
         return dbapi_module
 
     @classmethod
     def dbapi(cls):
-        # alias for backward compatibility
         return cls.import_dbapi()
 
     def create_connect_args(self, url):
         host = url.host
         port = url.port
-        # url.query is a immutabledict mapping str -> str | list[str]
         q = url.query
         connect_kwargs = {k: (v[-1] if isinstance(v, (list, tuple)) else v) for k, v in q.items()}
-
         if "timeout" in connect_kwargs:
             connect_kwargs["timeout"] = float(connect_kwargs["timeout"])
-
-        # Optional: allow "cluster_members" as comma-separated list
         if "cluster_members" in connect_kwargs:
             cm = connect_kwargs["cluster_members"]
             if isinstance(cm, str):
                 connect_kwargs["cluster_members"] = [s.strip() for s in cm.split(",") if s.strip()]
-
         return [(host, port), connect_kwargs]
 
     def do_connect(self, *cargs, **cparams):
@@ -76,13 +63,9 @@ class HazelcastDialect(default.DefaultDialect):
         if cargs:
             host, port = cargs
             return dbapi.connect(host=host, port=port, **cparams)
-        # Or support DSN-less forms as needed.
         return dbapi.connect(**cparams)
 
     def do_execute(self, cursor, statement, parameters, context=None):
-        """
-        Execute a SQL statement using our DBAPI Cursor.
-        """
         if parameters is None:
             cursor.execute(statement)
         else:
@@ -108,62 +91,33 @@ class HazelcastDialect(default.DefaultDialect):
         return None
 
     def get_schema_names(self, connection, **kwargs):
-        """
-        Return list of available schemas in Hazelcast.
-        """
-        return ["hazelcast", "public"]
+        res = connection.execute(text("SELECT schema_name FROM information_schema.schemata"))
+        return [r[0] for r in res.fetchall()]
 
     def get_table_names(self, connection, schema=None, **kwargs):
-        """
-        Return list of mapping names (tables) in a given schema.
-        """
-        try:
-            sch = schema or self.default_schema_name
-            result = connection.execute(text(
-                "SELECT table_name FROM information_schema.tables "
-                "WHERE table_schema = :schema "
-            ), {"schema": sch})
-            return [row[0] for row in result.fetchall()]
-        except Exception as e:
-            print(e)
-            raise Exception(f"Unable to get table names for schema {schema}: {e}")
-
-    def has_table(self, connection, table_name, schema=None, **kw):
         sch = schema or self.default_schema_name
-        res = connection.exec_driver_sql(
-            "SELECT 1 FROM information_schema.tables "
-            "WHERE table_schema = ? AND table_name = ?",
-            (sch, table_name)
-        ).fetchone()
-        return res is not None
+        res = connection.execute(text(
+            "SELECT table_name FROM information_schema.tables "
+            "WHERE table_schema = :schema AND table_type = 'BASE TABLE'"
+        ), {"schema": sch})
+        return [r[0] for r in res.fetchall()]
 
     def get_view_names(self, connection, schema=None, **kwargs):
-        """
-        Return list of mapping names (tables) in a given schema.
-        """
-        try:
-            sch = schema or self.default_schema_name
-            result = connection.execute(text(
-                "SELECT mapping_name FROM information_schema.views "
-                "WHERE table_schema = :schema"
-            ), {"schema": sch})
-            return [row[0] for row in result.fetchall()]
-        except Exception as e:
-            raise Exception(f"Unable to get table names for schema {schema}: {e}")
+        sch = schema or self.default_schema_name
+        res = connection.execute(text(
+            "SELECT table_name FROM information_schema.views "
+            "WHERE table_schema = :schema"
+        ), {"schema": sch})
+        return [r[0] for r in res.fetchall()]
 
     def get_columns(self, connection, table_name, schema=None, **kwargs):
-        """
-        Return column metadata list for a given table.
-        Each column is a dict with keys: name, type, nullable.
-        """
         sch = schema or self.default_schema_name
-        query = text("""
-                     SELECT column_name, data_type, is_nullable, character_maximum_length
-                     FROM information_schema.columns
-                     WHERE table_schema = :schema AND table_name = :table
-                     ORDER BY ordinal_position
-                     """)
-        rows = connection.execute(query, {"schema": sch, "table": table_name})
+        rows = connection.execute(text("""
+                                       SELECT column_name, data_type, is_nullable, character_maximum_length
+                                       FROM information_schema.columns
+                                       WHERE table_schema = :schema AND table_name = :table
+                                       ORDER BY ordinal_position
+                                       """), {"schema": sch, "table": table_name})
 
         cols = []
         for name, dtype, nullable, char_len in rows.fetchall():
@@ -180,11 +134,11 @@ class HazelcastDialect(default.DefaultDialect):
                 coltype = sqltypes.Numeric()
             elif t in ("BOOLEAN", "BOOL"):
                 coltype = sqltypes.Boolean()
-            elif t in ("DATE",):
+            elif t == "DATE":
                 coltype = sqltypes.Date()
-            elif t in ("TIME",):
+            elif t == "TIME":
                 coltype = sqltypes.Time()
-            elif t in ("TIMESTAMP",):
+            elif t == "TIMESTAMP":
                 coltype = sqltypes.TIMESTAMP()
             else:
                 coltype = sqltypes.String(length=char_len) if char_len else sqltypes.String()
@@ -196,6 +150,14 @@ class HazelcastDialect(default.DefaultDialect):
                 "default": None,
             })
         return cols
+
+    def has_table(self, connection, table_name, schema=None, **kw):
+        sch = schema or self.default_schema_name
+        row = connection.execute(text(
+            "SELECT 1 FROM information_schema.tables "
+            "WHERE table_schema = :schema AND table_name = :table"
+        ), {"schema": sch, "table": table_name}).fetchone()
+        return row is not None
 
     def get_pk_constraint(self, connection, table_name, schema=None, **kw):
         return {"constrained_columns": [], "name": None}
