@@ -2,6 +2,22 @@ from sqlalchemy.engine import default
 from sqlalchemy import types as sqltypes
 from sqlalchemy import text
 
+SQL_SCHEMA = "SELECT DISTINCT table_schema FROM information_schema.tables"
+SQL_TABLES = """SELECT table_name FROM information_schema.tables 
+                WHERE table_schema = :schema AND table_type = 'BASE TABLE'"""
+SQL_VIEWS = """SELECT table_name FROM information_schema.views 
+               WHERE table_schema = :schema"""
+SQL_COLUMNS = """
+              SELECT column_name, column_external_name, ordinal_position, is_nullable, data_type
+              FROM information_schema.columns
+              WHERE table_schema = :schema AND table_name = :table
+              ORDER BY ordinal_position
+              """
+SQL_HAS_TABLE = """SELECT 1 FROM information_schema.tables 
+                   WHERE table_schema = :schema AND table_name = :table"""
+
+DEFAULT_SCHEMA_NAME = "public"
+
 class HazelcastDialect(default.DefaultDialect):
     name = "hazelcast"
     driver = "python"
@@ -13,8 +29,6 @@ class HazelcastDialect(default.DefaultDialect):
     supports_sane_multi_rowcount = True
     supports_native_boolean = True
     supports_native_decimal = True
-
-    default_schema_name = "public"
 
     ischema_names = {
         "BOOLEAN": sqltypes.Boolean,
@@ -91,33 +105,22 @@ class HazelcastDialect(default.DefaultDialect):
         return None
 
     def get_schema_names(self, connection, **kwargs):
-        res = connection.execute(text("SELECT schema_name FROM information_schema.schemata"))
+        res = connection.execute(text(f"{SQL_SCHEMA}"))
         return [r[0] for r in res.fetchall()]
 
     def get_table_names(self, connection, schema=None, **kwargs):
-        sch = schema or self.default_schema_name
-        res = connection.execute(text(
-            "SELECT table_name FROM information_schema.tables "
-            "WHERE table_schema = :schema AND table_type = 'BASE TABLE'"
-        ), {"schema": sch})
+        sch = schema or DEFAULT_SCHEMA_NAME
+        res = connection.execute(text(f"{SQL_TABLES}"), {"schema": sch})
         return [r[0] for r in res.fetchall()]
 
     def get_view_names(self, connection, schema=None, **kwargs):
-        sch = schema or self.default_schema_name
-        res = connection.execute(text(
-            "SELECT table_name FROM information_schema.views "
-            "WHERE table_schema = :schema"
-        ), {"schema": sch})
+        sch = schema or DEFAULT_SCHEMA_NAME
+        res = connection.execute(text(f"{SQL_VIEWS}"), {"schema": sch})
         return [r[0] for r in res.fetchall()]
 
     def get_columns(self, connection, table_name, schema=None, **kwargs):
-        sch = schema or self.default_schema_name
-        rows = connection.execute(text("""
-                                       SELECT column_name, data_type, is_nullable, character_maximum_length
-                                       FROM information_schema.columns
-                                       WHERE table_schema = :schema AND table_name = :table
-                                       ORDER BY ordinal_position
-                                       """), {"schema": sch, "table": table_name})
+        sch = schema or DEFAULT_SCHEMA_NAME
+        rows = connection.execute(text(f"{SQL_COLUMNS}"), {"schema": sch, "table": table_name})
 
         cols = []
         for name, dtype, nullable, char_len in rows.fetchall():
@@ -152,11 +155,8 @@ class HazelcastDialect(default.DefaultDialect):
         return cols
 
     def has_table(self, connection, table_name, schema=None, **kw):
-        sch = schema or self.default_schema_name
-        row = connection.execute(text(
-            "SELECT 1 FROM information_schema.tables "
-            "WHERE table_schema = :schema AND table_name = :table"
-        ), {"schema": sch, "table": table_name}).fetchone()
+        sch = schema or DEFAULT_SCHEMA_NAME
+        row = connection.execute(text(f"{SQL_HAS_TABLE}"), {"schema": sch, "table": table_name}).fetchone()
         return row is not None
 
     def get_pk_constraint(self, connection, table_name, schema=None, **kw):

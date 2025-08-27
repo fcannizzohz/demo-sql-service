@@ -68,17 +68,23 @@ class Cursor:
         self.description = last_desc
         self.rowcount = total if total else -1
 
-    def fetchone(self) -> Optional[Tuple]:
+    def fetchone(self):
         if self._iterator is None:
             if self._result is None:
                 raise Error("fetchone() called before execute()")
-            # DML/DDL path: nothing to fetch
+            # DML/DDL: nothing to fetch
             return None
         try:
             row = next(self._iterator)
             return tuple(row)
         except StopIteration:
-            self.close()
+            # Free server-side resources but KEEP description for metadata consumers
+            try:
+                if self._result is not None:
+                    self._result.close()
+            finally:
+                self._result = None
+                self._iterator = None
             return None
 
     def fetchmany(self, size: Optional[int] = None) -> List[Tuple]:
@@ -124,7 +130,7 @@ class Cursor:
         finally:
             self._result = None
             self._iterator = None
-            self.description = None
+            # self.description = None
             self.rowcount = -1
 
     def __enter__(self): return self

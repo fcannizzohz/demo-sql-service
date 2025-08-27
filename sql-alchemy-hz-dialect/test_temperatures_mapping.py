@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import time
 import tempfile
 from pathlib import Path
@@ -6,6 +7,8 @@ from pathlib import Path
 import hazelcast
 from testcontainers.core.container import DockerContainer
 from sqlalchemy import create_engine, text
+
+from hazelcast_sqlalchemy import SQL_COLUMNS, SQL_VIEWS, SQL_TABLES, SQL_HAS_TABLE, SQL_SCHEMA, DEFAULT_SCHEMA_NAME
 
 # 1️⃣ Prepare the CSV under a temp directory
 data_root = Path(tempfile.mkdtemp())
@@ -19,7 +22,7 @@ csv_dir.mkdir()
     "3,15\n"
 )
 
-# 2️⃣ Start Hazelcast 5.5 (full distro) and mount our CSV dir
+print("Start Hazelcast 5.5 (full distro) and mount our CSV dir")
 hz = (
     DockerContainer("hazelcast/hazelcast:5.5")
     .with_volume_mapping(str(csv_dir), "/home/hazelcast/data", mode="ro")
@@ -30,10 +33,7 @@ host = hz.get_container_host_ip()
 port = hz.get_exposed_port(5701)
 address = f"{host}:{port}"
 
-# Give Hazelcast a moment to finish startup
-time.sleep(5)
-
-# 3️⃣ Connect with the Hazelcast Python client and create the File mapping
+print("Connect with the Hazelcast Python client and create the File mapping")
 client = hazelcast.HazelcastClient(cluster_members=[address])
 ddl = """
 CREATE OR REPLACE MAPPING temperatures (
@@ -50,32 +50,51 @@ OPTIONS (
 """
 client.sql.execute(ddl).result()
 
-# 4️⃣ Verify with the Python client directly
-print("⏺ Direct client SELECT")
+print("Verify with the Python client directly")
+print("  Direct client SELECT")
 rows = client.sql.execute("SELECT * FROM temperatures").result()
 print([tuple(r) for r in rows])  # -> [(1,20),(2,25),(3,15)]
 
-# 5️⃣ Now test via SQLAlchemy + your hazelcast_sqlalchemy dialect
+print("Now test via SQLAlchemy + your hazelcast_sqlalchemy dialect")
 engine = create_engine(f"hazelcast+python://{host}:{port}?timeout=10")
 
-print("⏺ SQLAlchemy SELECT")
+print("  SQLAlchemy SELECT")
 with engine.connect() as conn:
     result = conn.execute(text("SELECT * FROM temperatures"))
     data = result.all()
-    print(data)  # should match the list of tuples above
+    print(data)
 
-print("⏺ SQLAlchemy SELECT tables")
+print("  SQLAlchemy SELECT schema")
 with engine.connect() as conn:
-    result = conn.execute(text("SELECT table_name FROM information_schema.mappings"))
+    result = conn.execute(text(SQL_SCHEMA))
     data = result.all()
-    print(data)  # should match the list of tuples above
+    print(data)
 
-print("⏺ SQLAlchemy SELECT views")
+print("  SQLAlchemy SELECT tables")
 with engine.connect() as conn:
-    result = conn.execute(text("SELECT table_name FROM information_schema.views"))
+    result = conn.execute(text(SQL_TABLES), {"schema": DEFAULT_SCHEMA_NAME})
     data = result.all()
-    print(data)  # should match the list of tuples above
+    print(data)
 
-# 6️⃣ Cleanup
+print("  SQLAlchemy SELECT views")
+with engine.connect() as conn:
+    result = conn.execute(text(SQL_VIEWS), {"schema": DEFAULT_SCHEMA_NAME})
+    data = result.all()
+    print(data)
+
+print("  SQLAlchemy SELECT columns")
+with engine.connect() as conn:
+    result = conn.execute(text(SQL_COLUMNS), {"schema": DEFAULT_SCHEMA_NAME, "table": "temperatures"})
+    data = result.all()
+    print(data)
+
+print("  SQLAlchemy SELECT has_table")
+with engine.connect() as conn:
+    result = conn.execute(text(f"{SQL_HAS_TABLE}"), {"schema": DEFAULT_SCHEMA_NAME, "table": "temperatures"})
+    data = result.all()
+    print(data)
+
+
+print("Cleanup")
 client.shutdown()
 hz.stop()
