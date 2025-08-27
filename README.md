@@ -2,14 +2,40 @@
 
 This README walks through mapping and querying of **cities** and **temperatures** data using Hazelcast SQL.
 
+The project demonstrates how to feed data into a Hazelcast cluster and plug a dashboard (Apache Superset) to do analytics connecting directly to the cluster.
+
 ## Steps
 
 ### Load cluster
 
 Run docker compose to create the cluster
+
 ```shell
 docker compose up
 ```
+
+This command spins up:
+
+- Two node cluster (`hazelcast1` and `hazelcast2`)
+- Management Centre
+- Zookeeper
+- Kafka
+- Apache superset
+
+It won't spin up the data producer which is configured to run in the `producer` docker compose profile.
+
+### Producer automation and testing
+
+When running the producer application all the mappings are created automatically. The following instructions allow you to create
+the mappings manually for illustration purposes.
+
+If the application is started with `docker compose --profile producer up`, the producer starts creating all the necessary mappings for full automation.
+
+### Testing
+
+- `python test_temperature_mapping.py` runs a test that spins up a hazelcast node, creates the mapping to the temperature.csv file and executes simple selects.
+- `python test_streaming.py` does a streaming query with the cluster and producer started, using a connection via the SQL Alchemy driver
+- `python test_streaming_hz.py` does a streaming query with the cluster and producer started, using a connection via the Python Hazelcast client
 
 ### Setup seed data and mappings
 
@@ -205,7 +231,7 @@ loads the available city IDs from the cluster (`hazelcast1:5701`) and then start
 
 Run it via `docker compose --profile producer up`.
 
-Build the code that runs in the container via `docker compose build temperatures_producer`.
+Build the docker image with the producer application via `docker compose build temperatures_producer`.
 
 ### Visualize data via SQL query
 
