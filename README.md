@@ -237,6 +237,11 @@ Build the docker image with the producer application via `docker compose build t
 
 This project uses [Apache Superset](https://superset.apache.org/) to illustrate the integration with a modern Business Intelligence application, directly using SQL as the integration language. 
 
+#### Build Superset with the SQL Alchemy driver for Hazelcast
+
+Superset requires the SQL Alchemy driver for Hazelcast to be installed in the docker image.
+To achieve this, run `docker compose build superset`, the build installs the driver in `./sql-alchemy-hz-dialect` in the image, allowing connection to the cluster.
+
 #### Login to Superset
 
 Hazelcast doesn't come with a SQLAlchemy integration with Superset so a basic version is available in `src/main/python` and installed automatically in Superset docker container used in this exercise.
