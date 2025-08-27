@@ -1,5 +1,5 @@
 import hazelcast
-from typing import Optional, Tuple, Sequence, List
+from typing import Optional, Tuple, Sequence, List, Union
 
 # PEP-249
 paramstyle = "qmark"
@@ -16,6 +16,37 @@ class ProgrammingError(DatabaseError): pass
 class NotSupportedError(DatabaseError): pass
 
 _DEFAULT_TIMEOUT = 30
+
+def _normalize_members(
+        host: Optional[str],
+        port: Optional[int],
+        cluster_members: Optional[Union[str, Sequence[str]]],
+) -> List[str]:
+    """
+    Produce a clean list of member endpoints like ['host:5701', ...].
+    - If cluster_members is provided (str or list), use it.
+    - Else, fall back to host+port if both present.
+    - Raise if neither is provided.
+    """
+    members: List[str] = []
+
+    if cluster_members:
+        if isinstance(cluster_members, str):
+            # allow comma-separated "h1:5701,h2:5701"
+            parts = [p.strip() for p in cluster_members.split(",") if p.strip()]
+            members.extend(parts)
+        else:
+            members.extend([str(m).strip() for m in cluster_members if str(m).strip()])
+
+    if not members:
+        if host and port:
+            members = [f"{host}:{port}"]
+        else:
+            raise InterfaceError(
+                "connect() requires either cluster_members or both host and port"
+            )
+
+    return members
 
 class Cursor:
     def __init__(self, client, timeout: Optional[float] = None):
@@ -144,8 +175,11 @@ class Connection:
     def cursor(self):
         return Cursor(self._client, timeout=self._default_timeout)
 
-    def commit(self): pass
-    def rollback(self): pass
+    def commit(self):  # autocommit semantics
+        pass
+
+    def rollback(self):
+        pass
 
     def close(self):
         if self._client is not None:
@@ -157,9 +191,42 @@ class Connection:
     def __enter__(self): return self
     def __exit__(self, exc_type, exc, tb): self.close()
 
-def connect(host: str, port: int, timeout: Optional[float] = None, **kwargs) -> Connection:
+def connect(
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        timeout: Optional[float] = None,
+        cluster_members: Optional[Union[str, Sequence[str]]] = None,
+        **kwargs
+) -> Connection:
+    """
+    Create a HazelcastClient and wrap it in a DB-API Connection.
+
+    Parameters
+    ----------
+    host, port : optional
+        Single member address (used if cluster_members not provided).
+    cluster_members : str | list[str], optional
+        Comma-separated string or list of 'host:port' entries; takes precedence
+        over host/port when provided.
+    timeout : float, optional
+        Default SQL execution timeout (seconds) for cursors from this connection.
+        (Not the Hazelcast client connection timeout.)
+    **kwargs :
+        Passed through to hazelcast.HazelcastClient(...), e.g.:
+        cluster_name, smart_routing, ssl_* options, connection_timeout, etc.
+    """
+    members = _normalize_members(host, port, cluster_members)
+
+    # Ensure we don't accidentally forward our SQL timeout into the client kwargs
+    client_kwargs = dict(kwargs)  # shallow copy
+    # Common pitfall: users might supply 'timeout' expecting client connect timeout.
+    # We reserve 'timeout' here for SQL execution. If they need client connect timeouts,
+    # they should pass the appropriate hazelcast client options (e.g. connection_timeout).
+    if "timeout" in client_kwargs:
+        client_kwargs.pop("timeout", None)
+
     client = hazelcast.HazelcastClient(
-        cluster_members=[f"{host}:{port}"],
-        **{k: v for k, v in kwargs.items() if k != "timeout"}
+        cluster_members=members,
+        **client_kwargs
     )
     return Connection(client, default_timeout=timeout)

@@ -1,22 +1,36 @@
+import re
+
 from sqlalchemy.engine import default
 from sqlalchemy import types as sqltypes
 from sqlalchemy import text
 
-SQL_SCHEMA = "SELECT DISTINCT table_schema FROM information_schema.tables"
-SQL_TABLES = """SELECT table_name FROM information_schema.tables 
-                WHERE table_schema = :schema AND table_type = 'BASE TABLE'"""
-SQL_VIEWS = """SELECT table_name FROM information_schema.views 
-               WHERE table_schema = :schema"""
+SQL_SCHEMA = """
+             SELECT DISTINCT table_schema FROM information_schema.tables
+             UNION
+             SELECT table_schema FROM information_schema.views
+             """
+SQL_TABLES = """
+             SELECT table_name FROM information_schema.tables 
+             WHERE table_schema = :schema AND table_type = 'BASE TABLE'
+             """
+SQL_VIEWS = """
+            SELECT table_name FROM information_schema.views 
+            WHERE table_schema = :schema
+            """
 SQL_COLUMNS = """
               SELECT column_name, column_external_name, ordinal_position, is_nullable, data_type
               FROM information_schema.columns
               WHERE table_schema = :schema AND table_name = :table
               ORDER BY ordinal_position
               """
-SQL_HAS_TABLE = """SELECT 1 FROM information_schema.tables 
-                   WHERE table_schema = :schema AND table_name = :table"""
+SQL_HAS_TABLE = """
+                SELECT 1 FROM information_schema.tables 
+                WHERE table_schema = :schema AND table_name = :table
+                """
 
 DEFAULT_SCHEMA_NAME = "public"
+
+_VARCHAR_LEN_RE = re.compile(r"^VARCHAR\s*\(\s*(\d+)\s*\)$", re.IGNORECASE)
 
 class HazelcastDialect(default.DefaultDialect):
     name = "hazelcast"
@@ -118,38 +132,69 @@ class HazelcastDialect(default.DefaultDialect):
         res = connection.execute(text(f"{SQL_VIEWS}"), {"schema": sch})
         return [r[0] for r in res.fetchall()]
 
+    def get_indexes(self, connection, table_name, schema=None, **kw):
+        # Hazelcast SQL doesn’t expose relational indexes in a way that SQLAlchemy expects.
+        # Return an empty list so callers (e.g., Superset) don’t crash.
+        return []
+
     def get_columns(self, connection, table_name, schema=None, **kwargs):
         sch = schema or DEFAULT_SCHEMA_NAME
-        rows = connection.execute(text(f"{SQL_COLUMNS}"), {"schema": sch, "table": table_name})
+        res = connection.execute(text(SQL_COLUMNS), {"schema": sch, "table": table_name})
 
         cols = []
-        for name, dtype, nullable, char_len in rows.fetchall():
-            t = (dtype or "").upper()
-            if t in ("INT", "INTEGER"):
-                coltype = sqltypes.Integer()
-            elif t in ("BIGINT",):
-                coltype = sqltypes.BigInteger()
-            elif t in ("TINYINT", "SMALLINT"):
-                coltype = sqltypes.SmallInteger()
-            elif t in ("DOUBLE", "FLOAT", "REAL"):
-                coltype = sqltypes.Float()
-            elif t in ("DECIMAL", "NUMERIC"):
-                coltype = sqltypes.Numeric()
-            elif t in ("BOOLEAN", "BOOL"):
-                coltype = sqltypes.Boolean()
-            elif t == "DATE":
-                coltype = sqltypes.Date()
-            elif t == "TIME":
-                coltype = sqltypes.Time()
-            elif t == "TIMESTAMP":
-                coltype = sqltypes.TIMESTAMP()
+        for row in res:
+            m = row._mapping  # stable, name-based access
+            name = m["column_name"]
+            dtype = (m.get("data_type") or "").strip().upper()
+            is_nullable = m.get("is_nullable")
+
+            # normalise nullable across bool/YES/NO
+            if isinstance(is_nullable, bool):
+                nullable = is_nullable
             else:
-                coltype = sqltypes.String(length=char_len) if char_len else sqltypes.String()
+                nullable = str(is_nullable).strip().upper() in ("Y", "YES", "TRUE", "T", "1")
+
+            # Optional: try to extract VARCHAR(n) length if server encodes it in data_type
+            varchar_len = None
+            if dtype.startswith("VARCHAR"):
+                mlen = _VARCHAR_LEN_RE.match(dtype)
+                if mlen:
+                    try:
+                        varchar_len = int(mlen.group(1))
+                    except ValueError:
+                        varchar_len = None
+                # normalise dtype to bare token for mapping below
+                dtype = "VARCHAR"
+
+            # Map to SQLAlchemy types
+            if dtype in ("INT", "INTEGER"):
+                coltype = sqltypes.Integer()
+            elif dtype == "BIGINT":
+                coltype = sqltypes.BigInteger()
+            elif dtype in ("TINYINT", "SMALLINT"):
+                coltype = sqltypes.SmallInteger()
+            elif dtype in ("DOUBLE", "FLOAT", "REAL"):
+                coltype = sqltypes.Float()
+            elif dtype in ("DECIMAL", "NUMERIC"):
+                coltype = sqltypes.Numeric()
+            elif dtype in ("BOOLEAN", "BOOL"):
+                coltype = sqltypes.Boolean()
+            elif dtype == "DATE":
+                coltype = sqltypes.Date()
+            elif dtype == "TIME":
+                coltype = sqltypes.Time()
+            elif dtype == "TIMESTAMP":
+                coltype = sqltypes.TIMESTAMP()
+            elif dtype == "VARCHAR":
+                coltype = sqltypes.String(length=varchar_len) if varchar_len else sqltypes.String()
+            else:
+                # Fallback: treat as string if unknown
+                coltype = sqltypes.String()
 
             cols.append({
                 "name": name,
                 "type": coltype,
-                "nullable": (str(nullable).upper() == "YES"),
+                "nullable": nullable,
                 "default": None,
             })
         return cols
@@ -167,6 +212,54 @@ class HazelcastDialect(default.DefaultDialect):
 
     def get_unique_constraints(self, connection, table_name, schema=None, **kw):
         return []
+
+    def get_table_comment(self, connection, table_name, schema=None, **kw):
+        # Superset may call this to show descriptions; Hazelcast doesn’t store them.
+        return {"text": None}
+
+    def get_view_definition(self, connection, view_name, schema=None, **kw):
+        # If Hazelcast exposes definition in the future, you can SELECT it here.
+        return None
+
+    def get_check_constraints(self, connection, table_name, schema=None, **kw):
+        # Hazelcast SQL doesn’t manage relational CHECK constraints.
+        return []
+
+    def get_sequence_names(self, connection, schema=None, **kw):
+        # No sequences in Hazelcast.
+        return []
+
+    def get_temp_table_names(self, connection, schema=None, **kw):
+        # No temporary tables in Hazelcast SQL.
+        return []
+
+    def get_table_options(self, connection, table_name, schema=None, **kw):
+        sch = schema or self.default_schema_name
+        row = connection.exec_driver_sql(
+            "SELECT table_type, is_insertable_into, is_typed "
+            "FROM information_schema.tables "
+            "WHERE table_schema = ? AND table_name = ?",
+            (sch, table_name)
+        ).fetchone()
+        if not row:
+            return {}
+        m = row._mapping
+        def _to_bool(v):
+            if isinstance(v, bool): return v
+            return str(v).strip().upper() in ("Y","YES","TRUE","T","1")
+        return {
+            "hazelcast_table_type": m.get("table_type"),
+            "is_insertable_into": _to_bool(m.get("is_insertable_into")),
+            "is_typed": _to_bool(m.get("is_typed")),
+        }
+
+    # Isolation level (Hazelcast SQL is effectively autocommit)
+    def get_isolation_level(self, dbapi_connection):
+        return "AUTOCOMMIT"
+
+    def set_isolation_level(self, dbapi_connection, level):
+        # No-op; keeping signature for SQLAlchemy.
+        pass
 
 # Register this dialect for URLs of the form hazelcast+python://
 from sqlalchemy.dialects import registry
