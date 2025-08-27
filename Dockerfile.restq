@@ -1,0 +1,34 @@
+FROM python:3.11-slim
+
+# Keep pip quiet about root usage inside containers
+ENV PIP_ROOT_USER_ACTION=ignore \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Small base tools (curl for healthcheck)
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# --- Copy your dialect repo and install it (same style as your Superset image) ---
+# Expecting the repo folder to exist next to this Dockerfile
+#   ./sql-alchemy-hz-dialect/  (contains hazelcast_sqlalchemy/ with restq.py, dialect.py, etc.)
+COPY ./sql-alchemy-hz-dialect /opt/sql-alchemy-hz-dialect
+
+# If your package metadata includes deps, this is enough:
+#   RUN pip install --no-cache-dir /opt/sql-alchemy-hz-dialect
+# To be robust, also ensure runtime deps are present:
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir "uvicorn[standard]" orjson fastapi \
+    && pip install --no-cache-dir /opt/sql-alchemy-hz-dialect
+
+# Expose REST port
+EXPOSE 8000
+
+# Healthcheck hits /health
+HEALTHCHECK --interval=20s --timeout=3s --start-period=20s --retries=5 \
+  CMD curl -fsS http://127.0.0.1:8000/health || exit 1
+
+# Run the API (hazelcast_sqlalchemy.restq:app)
+CMD uvicorn hazelcast_sqlalchemy.restq:app --host 0.0.0.0 --port 8000 --workers ${UVICORN_WORKERS:-2}

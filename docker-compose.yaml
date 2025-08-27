@@ -81,6 +81,43 @@ services:
         superset init &&
         superset run -h 0.0.0.0 -p 8088"
 
+  restq:
+    build:
+      context: .
+      dockerfile: Dockerfile.restq
+    image: hazelcast-restq:latest
+    container_name: restq
+    depends_on:
+      - hazelcast1
+      - hazelcast2
+    environment:
+      # Point the Python client at your cluster
+      HZ_CLUSTER_MEMBERS: hazelcast1:5701,hazelcast2:5701
+
+      # Optional robust client timeouts & heartbeats (ms)
+      HZ_CONNECTION_TIMEOUT: 10000
+      HZ_CONNECTION_ATTEMPT_LIMIT: 3
+      HZ_CONNECTION_ATTEMPT_PERIOD: 3000
+      HZ_HEARTBEAT_INTERVAL: 5000
+      HZ_HEARTBEAT_TIMEOUT: 20000
+      HZ_INVOCATION_TIMEOUT: 60000
+
+      # REST behaviour (read-only already enforced in your code)
+      DEFAULT_TIMEOUT: 30
+      DEFAULT_CURSOR_BUFFER: 2048
+      STREAM_CHUNK_ROWS: 4096
+      RATE_LIMIT_RPS: 50
+      RATE_LIMIT_BURST: 100
+
+      # If you prefer URL instead of HZ_* vars:
+      # DB_URL: hazelcast+python://hazelcast1:5701
+
+      # Uvicorn workers (overridable)
+      UVICORN_WORKERS: 2
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
   temperatures_producer:
     profiles: ["producer"]
     build:

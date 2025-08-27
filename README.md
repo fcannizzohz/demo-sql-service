@@ -298,3 +298,7 @@ With the above it's possible do demonstrate how to build a simple dashboard:
 The file [dashboard_export.zip](./dashboard_export.zip) can be imported in Superset to recreate the dashboard.
 
 
+### Integrating with PowerBI
+
+The SQLAlchemy driver comes with an app that exposes an SQL interface over REST. This is used by teh Hazelcast.pq connector to connect powerbi to Hazelcast
+

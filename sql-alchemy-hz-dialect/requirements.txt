@@ -1,3 +1,6 @@
 hazelcast-python-client
 sqlalchemy
 testcontainers
+
+fastapi
+uvicorn
