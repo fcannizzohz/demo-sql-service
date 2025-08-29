@@ -1,0 +1,3 @@
+[submodule "sql-alchemy-hz-dialect"]
+	path = sql-alchemy-hz-dialect
+	url = git@github.com:fcannizzohz/sql-alchemy-hz-dialect.git
