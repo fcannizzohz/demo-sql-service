@@ -508,7 +508,12 @@ def cursor_create(req: CursorCreateRequest):
     try:
         params_tuple = tuple(req.params or [])
         cur.execute(req.sql, params_tuple)
+        log.debug("cursor_create: executed OK, desc cols=%s", [c[0] for c in (cur.description or [])])
+
         cols = [c[0] for c in (cur.description or [])] if cur.description else []
+        if not cur.description:
+            # no rows/DDL/etc. For a read-only API, we should treat this as error.
+            raise HTTPException(status_code=400, detail="Statement did not produce a result set")
     except Exception as e:
         try:
             cur.close()
@@ -545,6 +550,13 @@ def cursor_next(cursor_id: str, rows: Optional[int] = None, include_columns: boo
         state = _cursors.get(cursor_id)
     if not state:
         raise HTTPException(status_code=404, detail="Cursor not found or expired")
+    # NEW: sanity – executed?
+    if getattr(state.cur, "description", None) is None:
+        # translate to client-friendly status instead of surfacing DB-API Error
+        _close_cursor_state(state)
+        with _cursors_lock:
+            _cursors.pop(cursor_id, None)
+        raise HTTPException(status_code=409, detail="Cursor not ready: execute() did not complete")
 
     try:
         state.cur.arraysize = batch_size
