@@ -7,6 +7,11 @@
       <option name="url" value="https://repo.maven.apache.org/maven2" />
     </remote-repository>
     <remote-repository>
+      <option name="id" value="snapshot-internal" />
+      <option name="name" value="Hazelcast Internal Snapshots" />
+      <option name="url" value="https://repository.hazelcast.com/snapshot-internal/" />
+    </remote-repository>
+    <remote-repository>
       <option name="id" value="hazelcast-enterprise-snapshot" />
       <option name="name" value="Hazelcast Private Snapshot Repository" />
       <option name="url" value="https://repository.hazelcast.com/snapshot/" />

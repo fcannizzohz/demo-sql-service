@@ -1,6 +1,6 @@
 services:
   hazelcast1:
-    image: hazelcast/hazelcast:latest
+    image: hazelcast/hazelcast-enterprise:latest
     ports:
       - "5701:5701"
     volumes:
@@ -8,14 +8,16 @@ services:
     environment:
       - HZ_NETWORK_JOIN_TCP_IP_ENABLED=true
       - HZ_NETWORK_JOIN_TCP_IP_MEMBERS=hazelcast1,hazelcast2
+      - HZ_LICENSEKEY=${HZ_LICENSEKEY}
 
   hazelcast2:
-    image: hazelcast/hazelcast:latest
+    image: hazelcast/hazelcast-enterprise:latest
     volumes:
       - ./src/main/resources:/home/hazelcast/data
     environment:
       - HZ_NETWORK_JOIN_TCP_IP_ENABLED=true
       - HZ_NETWORK_JOIN_TCP_IP_MEMBERS=hazelcast1,hazelcast2
+      - HZ_LICENSEKEY=${HZ_LICENSEKEY}
 
   management-center:
     image: hazelcast/management-center:latest
