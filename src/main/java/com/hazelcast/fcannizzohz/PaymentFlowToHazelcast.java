@@ -46,6 +46,8 @@ public final class PaymentFlowToHazelcast {
     private static final String M_CAMT_ENTRY = "camt054_entry";
     private static final DateTimeFormatter ISO_OFFSET = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
+    private static final long DEFAULT_PERIOD_NANO = 60_000_000_000L; // Event period rate 60s
+
     private PaymentFlowToHazelcast() {
     }
 
@@ -93,7 +95,7 @@ public final class PaymentFlowToHazelcast {
             clock = Clock.systemUTC();
             usingSystemClock = true;
             rate = 1.0;
-            periodNanos = 1_000_000_000L;
+            periodNanos = DEFAULT_PERIOD_NANO;
             nextDeadline = System.nanoTime() + computeInitialDelayNanos(clock, rate);
             System.out.println("[info] Simulated start is in the future; switched to system clock immediately.");
         } else {
@@ -152,7 +154,7 @@ public final class PaymentFlowToHazelcast {
                     clock = Clock.systemUTC();
                     usingSystemClock = true;
                     rate = 1.0;
-                    periodNanos = 1_000_000_000L;
+                    periodNanos = DEFAULT_PERIOD_NANO;
                     nextDeadline = System.nanoTime() + computeInitialDelayNanos(clock, rate);
                     System.out.println("[info] Switched to system clock (caught up).");
                 }
@@ -509,7 +511,7 @@ public final class PaymentFlowToHazelcast {
      */
     private static long computeInitialDelayNanos(Clock clock, double rate) {
         long nanosIntoSecond = clock.instant().getNano();
-        long deltaSimNanos = (nanosIntoSecond == 0) ? 0L : (1_000_000_000L - nanosIntoSecond);
+        long deltaSimNanos = (nanosIntoSecond == 0) ? 0L : (DEFAULT_PERIOD_NANO - nanosIntoSecond);
         // Convert Δ(simulated) to Δ(real) by dividing by the rate.
         return (long) Math.ceil(deltaSimNanos / rate);
     }
