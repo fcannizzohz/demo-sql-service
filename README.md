@@ -1,7 +1,5 @@
 # SQL Demo
 
-This README walks through mapping and querying of **cities** and **temperatures** data using Hazelcast SQL.
-
 The project demonstrates how to feed data into a Hazelcast cluster and plug a dashboard (Apache Superset) to do analytics connecting directly to the cluster.
 
 ## Steps
@@ -18,220 +16,17 @@ This command spins up:
 
 - Two node cluster (`hazelcast1` and `hazelcast2`)
 - Management Centre
-- Zookeeper
-- Kafka
 - Apache superset
 
 It won't spin up the data producer which is configured to run in the `producer` docker compose profile.
 
 ### Producer automation and testing
 
-When running the producer application all the mappings are created automatically. The following instructions allow you to create
-the mappings manually for illustration purposes.
+When running the producer application all the mappings are created automatically: `docker compose --profile producer up`.
 
-If the application is started with `docker compose --profile producer up`, the producer starts creating all the necessary mappings for full automation.
-
-### Testing
-
-- `python test_temperature_mapping.py` runs a test that spins up a hazelcast node, creates the mapping to the temperature.csv file and executes simple selects.
-- `python test_streaming.py` does a streaming query with the cluster and producer started, using a connection via the SQL Alchemy driver
-- `python test_streaming_hz.py` does a streaming query with the cluster and producer started, using a connection via the Python Hazelcast client
-
-### Setup seed data and mappings
-
-You can create data and mappings by running main methods of the nested utility classes of 
-`com.hazelcast.fcannizzohz.SetupSeedData`:
-- `SetupSeedData$SetupCitiesMapping#main()`.
-- `SetupSeedData$SetupCitiesData#main()`.
-
-Or via Management Centre as following.
-
-In both cases, via Management centre you can verify that the data is available by running `SELECT * FROM cities;`
-
-#### Start Management Center
+### Start Management Center
 
 Go to`http://localhost:8080`, load the cluster and navigate to "SQL Browser"
-
-#### Create `cities` mapping
-
-View [Cities Mapping SQL](src/main/resources/cities_mapping.sql)
-
-Note that the `cities` table is empty: `SELECT * FROM cities;`
-
-#### Insert data into `cities`
-
-View [City Data SQL](src/main/resources/cities_data.sql)
-
-Note that the `cities` table is not empty: `SELECT * FROM cities;`
-
-### Insert and read data in map: `InsertIntoCitiesMap`
-
-Execute, from IDE, the main method in `InsertIntoCitiesMap`; this inserts two cities showing how to input data 
-either in JSON (as if data was coming from remote data sources like a REST service or a kafka topic) or using POJOs (when data
-is inserted as part of the application directly in the map)
-
-### Create mapping from file
-The file [temperatures.csv](./src/main/resources/temperatures.csv) contains temperatures of some cities in our database.
-This file can be mapped so that its data is loaded directly in Hazelcast, showing how to make data available in the cluster from
-heterogeneous data sources in a federated mode.
-
-Create the mapping to the temperatures.csv file running this SQL either via MC or running `SetupSeedData$SetupTemperaturesMapping#main()`: [Temperatures mapping sql](./src/main/resources/temperatures_mapping.sql)
-
-Show content matching the file content
-   ```sql
-   SELECT distinct(city_id), temperature
-   FROM temperatures where temperature>15
-   order by temperature;
-   ```
-
-### Show join query to federate file data and map data 
-   ```sql
-   SELECT
-      cities.country AS country,
-      avg(temperatures.temperature) AS temp
-   FROM
-      temperatures
-   RIGHT JOIN cities ON cities.city_id = temperatures.city_id
-   GROUP BY
-     cities.country;
-   ```
-
-Note that for some countries (like Italy, Morocco, and others), the average temperature is null because temperatures don't exist for city_id for some `city_id`s.
-
-Every time new temperatures are inserted on cities that don't have it, by extending the CSV file the view is updated with the correct average values.
-
-### Streaming 
-
-The class `TemperatureProducer` produces random temperatures for a list of city IDs. Run it via its `main()`.
-
-This generates data in the form of
-`{"city_id":1003,"temperature":19, "ts", "2025-06-12T12:09:42""}` in a topic called `temperature_updates`
-
-Create mapping to the topic by running the [Temperature Updates Mapping](./src/main/resources/temperature_updates_mapping.sql) SQL in Management Centre or by running `SetupSeedData$SetupTemperatureUpdatesMapping#main()`:
-```sql
-CREATE MAPPING temperature_updates (__key INT, city_id INT, temperature INT) 
-TYPE Kafka OPTIONS (
-  'keyFormat' = 'int',
-  'valueFormat' = 'json-flat',
-  'bootstrap.servers' = 'kafka1:19092'
-);
-```
-
-Run streaming query:
-```sql
-SELECT
-  *
-FROM
-  temperature_updates
-where
-  temperature > 15
-```
-
-#### Supporting non streaming clients
-
-Not all clients can support streaming SQL to perform operations like aggregations and joins. In this case, it's possible to put the 
-data in a map with:
-
-```sql
-CREATE
-OR REPLACE MAPPING current_temperatures (
-  __key INT,
-  city_id INT,
-  temperature INT,
-  ts TIMESTAMP
-) TYPE IMap OPTIONS (
-  'keyFormat' = 'int',
-  'valueFormat' = 'compact',
-  'valueCompactTypeName' = 'Temperature'
-);
-```
-
-and a new Hazelcast job that reacts to any new data in the stream and populates the map accordingly:
-
-```sql
-CREATE JOB current_temperatures AS SINK INTO current_temperatures
-SELECT
-    temperature_updates.city_id * 100000 AS __key,
-    temperature_updates.city_id as city_id,
-    temperature_updates.temperature as temperature,
-    temperature_updates.ts as ts
-FROM
-    temperature_updates;
-```
-
-Now, every time a new temperature data is streamed, the respective entry in `temperatures_streamed_map` is upserted.
-
-#### Handling late events
-
-This allows you to specify a maximum event lag. Any event that arrives later than the maximum event lag is dropped.
-See https://docs.hazelcast.com/hazelcast/5.5/sql/querying-streams#late-events for further details.
-
-Create a new view with temperature updates that collects data in the past 5s and orders it. 
-
-Run the SQL from [Temperature Updates Ordered View](./src/main/resources/temperature_updates_ordered_view.sql) or execute 
-`SetupSeedData$SetupTemperatureUpdatesOrderedView#main()`
-
-#### Querying aggregations
-
-With the event lag handled, the following query shows average temperature per `city_id`, over 3 seconds
-
-```sql
-SELECT
-  window_start,
-  window_end,
-  city_id,
-  AVG(temperature) AS avg_temperature
-FROM
-  TABLE (
-    TUMBLE (
-      TABLE temperature_updates_ordered, -- use the ordered view
-      DESCRIPTOR (ts), -- same timestamp column
-      INTERVAL '3' SECOND -- window size
-    )
-  )
-GROUP BY
-  window_start,
-  window_end,
-  city_id;
-```
-
-#### Federated join between table and streaming data
-
-Create an enriched, watermarked view that brings in the country for each event. To create the view
-execute the SQL in [Temperature Enriched View SQL](./src/main/resources/temperatures_enriched_view.sql) or run
-`SetupSeedData$SetupTemperaturesEnrichedView#main()`.
-
-Run 8s tumbling‐window aggregation over that view:
-
-```sql
-SELECT
-    window_start,
-    window_end,
-    country,
-    AVG(temperature) AS avg_temperature
-FROM TABLE(
-        TUMBLE(
-            TABLE temperature_enriched,    -- your view, already watermarked & joined
-            DESCRIPTOR(ts),                 -- use the event timestamp column
-                INTERVAL '8' SECOND            -- fixed 8 s tumbling windows
-        )
-     )
-GROUP BY
-    window_start,
-    window_end,
-    country;                         -- group by exactly the window bounds + country
-```
-
-### Automatically run seed data and temperature producer
-
-The container `"temperatures_producer"`, automatically started in the compose file, generates all the mappings and data.
-
-This container is simply a wrapper for `com.hazelcast.fcannizzohz.TemperatureProducerCmd#main()` that connects to `kafka1:9092`,
-loads the available city IDs from the cluster (`hazelcast1:5701`) and then starts producing random temperatures for illustration purposes.
-
-Run it via `docker compose --profile producer up`.
-
-Build the docker image with the producer application via `docker compose build temperatures_producer`.
 
 ### Visualize data via SQL query
 
@@ -277,28 +72,88 @@ SELECT table_name FROM information_schema.mappings
 WHERE table_schema = 'public'
 ```
 
-The output should look like:
-
-|table_name|
-|---|
-|temperature_updates|
-|cities|
-|temperatures|
-|current_temperatures|
-
-- `temperature_updates` is the streaming mapping with temperature updates coming from the producer. Since the producer is emitting data every second, the query `select * from temperature_updates limit 10` should return within 10s to display the latest temperatures received
-- `cities` is the table referring to the mapping for the `cities` data
-- `temperatures` is the mapping referring to the `csv` file loaded from file
-- `current_temperatures` is the map populated by the `current_temperatures` job. The map is automatically upserted every time a new temperature is received from the producer via Kafka.
-
-With the above it's possible do demonstrate how to build a simple dashboard:
-
-![Demo dashboard](./sample_superset_dashboard.png)
-
-The file [dashboard_export.zip](./dashboard_export.zip) can be imported in Superset to recreate the dashboard.
-
-
 ### Integrating with PowerBI
 
 The SQLAlchemy driver comes with an app that exposes an SQL interface over REST. This is used by teh Hazelcast.pq connector to connect powerbi to Hazelcast
 
+## The dataset: ISO 20022 Messages: PAIN, PACS, and CAMT
+
+ISO 20022 defines a family of standardized financial messages.  
+Three of the most commonly encountered in **payments** are:
+
+- **PAIN** (`Payments Initiation`)
+- **PACS** (`Payments Clearing and Settlement`)
+- **CAMT** (`Cash Management`)
+
+### 1. PAIN (Customer-to-Bank Initiation)
+
+- **Domain:** Customer → Bank
+- **Example:** `pain.001.001.03` (Customer Credit Transfer Initiation)
+- **Purpose:**
+    - Used by corporates or retail customers to instruct their bank to execute credit transfers.
+    - Can carry multiple payment instructions (one debtor, multiple creditors).
+- **Key Elements:**
+    - `GrpHdr`: Group header (message ID, creation date/time, number of transactions, control sum).
+    - `PmtInf`: Payment instructions (debtor, account, execution date).
+    - `CdtTrfTxInf`: Credit transfer transactions (amount, currency, creditor, creditor account, remittance info).
+
+### 2. PACS (Interbank Clearing and Settlement)
+
+- **Domain:** Bank ↔ Bank (interbank/clearing level)
+- **Example:** `pacs.008.001.03` (FIToFICustomerCreditTransfer V03)
+- **Purpose:**
+    - Used by financial institutions to move funds between them in order to settle customer payments.
+    - Usually derived from a PAIN message by the debtor’s bank.
+- **Key Elements:**
+    - `GrpHdr`: Interbank group header (message ID, agents, number of transactions, control sum).
+    - `CdtTrfTxInf`: One or more interbank transactions carrying debtor/creditor, agents, amount, references.
+    - `IntrBkSttlmAmt`: Interbank settlement amount.
+    - `InstgAgt` / `InstdAgt`: Instructing and instructed agents (the sending and receiving banks).
+
+### 3. CAMT (Bank-to-Customer Reporting)
+
+- **Domain:** Bank → Customer (reporting)
+- **Example:** `camt.054.001.03` (BankToCustomerDebitCreditNotification V03)
+- **Purpose:**
+    - Provides notifications and account statements to customers, showing credits/debits that have been booked.
+    - Used for reconciliation and end-of-day or intra-day reporting.
+- **Key Elements:**
+    - `GrpHdr`: Group header (message ID, creation date/time).
+    - `Ntfctn` (or `Stmt`): Notification or statement of account.
+    - `Acct`: The account being reported (IBAN, BBAN, or other).
+    - `Ntry`: Entries representing posted transactions (amount, debit/credit indicator, status, references, remittance info).
+
+### 4. How They Relate in a Payment Flow
+
+1. **Initiation (PAIN.001)**
+    - A corporate (debtor) sends a payment initiation to their bank (debtor bank).
+    - Example: “Pay 10,000 EUR to supplier’s account.”
+
+2. **Interbank Settlement (PACS.008)**
+    - The debtor bank transforms the customer’s request into an interbank payment message.
+    - Funds are transferred between the debtor bank and the creditor bank via the clearing/settlement mechanism (e.g., SEPA,
+      SWIFT, RTGS).
+
+3. **Notification/Reporting (CAMT.054)**
+    - Once booked, the bank notifies its customer (debtor or creditor) that the transaction has been debited/credited.
+    - This enables reconciliation and confirmation that the payment has been executed.
+
+### 5. Summary Table
+
+| Aspect          | PAIN (pain.001)               | PACS (pacs.008)                       | CAMT (camt.054)                         |
+|-----------------|-------------------------------|---------------------------------------|-----------------------------------------|
+| **Domain**      | Customer → Bank               | Bank ↔ Bank                           | Bank → Customer                         |
+| **Purpose**     | Initiate payment              | Execute/settle payment                | Report/notify posted entries            |
+| **Perspective** | Instruction (what to pay)     | Interbank transfer (moving the money) | Notification (what happened on account) |
+| **Key Players** | Debtor, Creditor, Debtor Bank | Debtor Bank, Creditor Bank            | Bank, Account Holder                    |
+| **Main Amount** | Instructed Amount             | Interbank Settlement Amount           | Booked Amount (Debit or Credit)         |
+| **Typical Msg** | `pain.001.001.03`             | `pacs.008.001.03`                     | `camt.054.001.03`                       |
+
+### 6. Example End-to-End Flow
+
+```text
+Customer → Bank → Clearing → Receiving Bank → Customer
+   |          |           |            |          |
+   |          |           |            |          |
+ pain.001  → pacs.008  → clearing   → pacs.008 → camt.054
+ (initiate)   (send funds)          (receive funds) (notify)
