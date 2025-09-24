@@ -100,7 +100,7 @@ CREATE OR REPLACE MAPPING fx_rates (
   __key VARCHAR,                       -- e.g. 'USD@2025-09-22'
   Currency VARCHAR,                    -- ISO 4217
   AsOf DATE,                           -- valuation date (use CURRENT_DATE if static)
-  RateToGBP DECIMAL                    -- multiply native amount * RateToGBP -> GBP
+  RateToUSD DECIMAL                    -- multiply native amount * RateToUSD -> USD
 )
 TYPE IMap
 OPTIONS (

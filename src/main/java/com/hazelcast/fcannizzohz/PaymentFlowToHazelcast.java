@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -46,7 +45,8 @@ public final class PaymentFlowToHazelcast {
     private static final String M_CAMT_ENTRY = "camt054_entry";
     private static final DateTimeFormatter ISO_OFFSET = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
-    private static final long DEFAULT_PERIOD_NANO = 60_000_000_000L; // Event period rate 60s
+    private static final long ONE_SECOND_NANOS = 1_000_000_000L;
+    private static final long DEFAULT_REAL_POLL_SECONDS = 60L; // or inject via a param
 
     private PaymentFlowToHazelcast() {
     }
@@ -73,6 +73,7 @@ public final class PaymentFlowToHazelcast {
         if (!(initialRate > 0.0) || Double.isInfinite(initialRate)) {
             throw new IllegalArgumentException("rate must be > 0 and finite");
         }
+        java.time.LocalDate lastSeededDate = null;
 
         final ThreadLocalRandom rnd = ThreadLocalRandom.current();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> { try { System.out.println("\nStopping generator…"); hz.shutdown(); } catch (Throwable ignore) {} }));
@@ -89,23 +90,37 @@ public final class PaymentFlowToHazelcast {
 
         long periodNanos;
         long nextDeadline;
+        double simRate = initialRate;
 
         // IMMEDIATE SWITCH if start is in the future
         if (switchToRealWhenCaughtUp && startedAhead && !usingSystemClock) {
             clock = Clock.systemUTC();
             usingSystemClock = true;
             rate = 1.0;
-            periodNanos = DEFAULT_PERIOD_NANO;
+            long realPeriodNanos = DEFAULT_REAL_POLL_SECONDS * ONE_SECOND_NANOS;
+            periodNanos = realPeriodNanos;
             nextDeadline = System.nanoTime() + computeInitialDelayNanos(clock, rate);
             System.out.println("[info] Simulated start is in the future; switched to system clock immediately.");
         } else {
-            periodNanos = Math.max(1L, Math.round(1_000_000_000.0 / rate));              // 1 sim sec per tick
+            periodNanos = Math.max(1L, Math.round(ONE_SECOND_NANOS / simRate));              // 1 sim sec per tick
             nextDeadline = System.nanoTime() + computeInitialDelayNanos(clock, rate);     // align to whole-second boundary
         }
 
         long tick = 0L;
         while (true) {
             try {
+                // derive "today" from the active clock
+                java.time.LocalDate today = java.time.Instant.now(clock)
+                                                             .atZone(java.time.ZoneOffset.UTC) // or ZoneId.systemDefault()
+                                                             .toLocalDate();
+
+                // seed only if the day rolled over
+                if (!today.equals(lastSeededDate)) {
+                    FxSeederPips.seedFxRatesForDate(hz, today, 42L);
+                    lastSeededDate = today;
+                    System.out.println("[info] Seeded fx_rates for " + today);
+                }
+
                 // --- generate one dataset using 'clock' (may be system after switch) ---
                 String debtorCountry = Data.DEFAULT_COUNTRIES.get(rnd.nextInt(Data.DEFAULT_COUNTRIES.size()));
                 int txCount = rnd.nextInt(1, 16);
@@ -139,8 +154,11 @@ public final class PaymentFlowToHazelcast {
                 """;
                     Map<String, Long> m = new LinkedHashMap<>();
                     hz.getSql().execute(q).forEach(row -> m.put((String) row.getObject(0), ((Number) row.getObject(1)).longValue()));
-                    System.out.printf("pain_tx=%d, pacs_tx=%d, camt_entries=%d%n",
-                            m.getOrDefault("pain_tx", 0L), m.getOrDefault("pacs_tx", 0L), m.getOrDefault("camt_entries", 0L));
+                    System.out.printf("[%s] pain_tx=%d, pacs_tx=%d, camt_entries=%d%n",
+                            Instant.now(clock).toString(),
+                            m.getOrDefault("pain_tx", 0L),
+                            m.getOrDefault("pacs_tx", 0L),
+                            m.getOrDefault("camt_entries", 0L));
                 }
             } catch (Throwable e) {
                 e.printStackTrace(System.err);
@@ -154,7 +172,7 @@ public final class PaymentFlowToHazelcast {
                     clock = Clock.systemUTC();
                     usingSystemClock = true;
                     rate = 1.0;
-                    periodNanos = DEFAULT_PERIOD_NANO;
+                    periodNanos = DEFAULT_REAL_POLL_SECONDS * ONE_SECOND_NANOS;
                     nextDeadline = System.nanoTime() + computeInitialDelayNanos(clock, rate);
                     System.out.println("[info] Switched to system clock (caught up).");
                 }
@@ -421,12 +439,17 @@ public final class PaymentFlowToHazelcast {
         }
     }
 
-    private static String toIso(String maybeOffset) {
-        if (isBlank(maybeOffset)) {
-            return null;
+    private static String toIso(String v) {
+        if (isBlank(v)) return null;
+        try {
+            return OffsetDateTime.parse(v).format(ISO_OFFSET);
+        } catch (Exception ignored) {
+            try { // try local date-time as UTC
+                return java.time.LocalDateTime.parse(v).atOffset(java.time.ZoneOffset.UTC).format(ISO_OFFSET);
+            } catch (Exception e) {
+                return null; // or keep original v
+            }
         }
-        // Accepts both Z and +/-offset inputs
-        return OffsetDateTime.parse(maybeOffset).format(ISO_OFFSET);
     }
 
     private static BigDecimal toDecimal(String v) {
@@ -484,7 +507,26 @@ public final class PaymentFlowToHazelcast {
     }
 
     private static String escape(String s) {
-        return s.replace("\\", "\\\\").replace("\"", "\\\"");
+        StringBuilder out = new StringBuilder(s.length() + 8);
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '\\': out.append("\\\\"); break;
+                case '"':  out.append("\\\""); break;
+                case '\b': out.append("\\b");  break;
+                case '\f': out.append("\\f");  break;
+                case '\n': out.append("\\n");  break;
+                case '\r': out.append("\\r");  break;
+                case '\t': out.append("\\t");  break;
+                default:
+                    if (c < 0x20) { // other control chars
+                        out.append(String.format("\\u%04x", (int) c));
+                    } else {
+                        out.append(c);
+                    }
+            }
+        }
+        return out.toString();
     }
 
     private static void runSqlScriptFromClasspath(SqlService sql, String resourceName) {
@@ -510,15 +552,16 @@ public final class PaymentFlowToHazelcast {
      * Initial delay so the next tick lands on a whole-second boundary of the *simulated* (or real) clock.
      */
     private static long computeInitialDelayNanos(Clock clock, double rate) {
-        long nanosIntoSecond = clock.instant().getNano();
-        long deltaSimNanos = (nanosIntoSecond == 0) ? 0L : (DEFAULT_PERIOD_NANO - nanosIntoSecond);
-        // Convert Δ(simulated) to Δ(real) by dividing by the rate.
+        long nanosIntoSecond = clock.instant().getNano();   // 0..999,999,999
+        long deltaSimNanos = (nanosIntoSecond == 0) ? 0L : (ONE_SECOND_NANOS - nanosIntoSecond);
+        // Convert simulated delta to real time
         return (long) Math.ceil(deltaSimNanos / rate);
     }
 
     private static boolean isSystemClock(Clock c) {
-        // Heuristic: equals systemUTC or systemDefaultZone
-        return c == Clock.systemUTC() || Objects.equals(c, Clock.systemDefaultZone());
+        // Detect JDK SystemClock implementations by class name (stable across JDKs)
+        String cn = c.getClass().getName();
+        return cn.endsWith("SystemClock");
     }
 
     private static String readResourceUtf8(String resourceName) {
@@ -633,13 +676,4 @@ public final class PaymentFlowToHazelcast {
             }
         }
     }
-
-    private static String req(XPath xp, Object ctx, String expr, String what) {
-        String v = eval(xp, ctx, expr);
-        if (isBlank(v)) {
-            throw new IllegalArgumentException("Missing " + what + " at " + expr);
-        }
-        return v;
-    }
-
 }

@@ -68,29 +68,29 @@ public final class Data {
     /**
      * Base currency for exposure normalisation.
      */
-    public static final String FX_BASE_CURRENCY = "GBP";
+    public static final String FX_BASE_CURRENCY = "USD";
 
     /**
-     * Currency -> rate to GBP (DECIMAL scale 12), for demo/testing.
-     * Replace with your own curated source when needed.
+     * Currency -> rate to USD (DECIMAL scale 12), for demo/testing.
+     * Source ballparks as of 2025-09-24. These move — don’t hardcode for prod.
      */
-    public static final Map<String, java.math.BigDecimal> FX_RATE_TO_GBP = Map.ofEntries(Map.entry("GBP", new java.math.BigDecimal("1.000000000000")), Map.entry("EUR", new java.math.BigDecimal("0.850000000000")), Map.entry("USD", new java.math.BigDecimal("0.780000000000")),
-            Map.entry("CAD", new java.math.BigDecimal("0.570000000000")), Map.entry("BRL", new java.math.BigDecimal("0.140000000000")), Map.entry("INR", new java.math.BigDecimal("0.009500000000")), Map.entry("CNY", new java.math.BigDecimal("0.110000000000")),
-            Map.entry("KRW", new java.math.BigDecimal("0.000580000000")), Map.entry("JPY", new java.math.BigDecimal("0.005200000000")), Map.entry("AUD", new java.math.BigDecimal("0.520000000000")), Map.entry("ZAR", new java.math.BigDecimal("0.043000000000")),
-            Map.entry("AED", new java.math.BigDecimal("0.210000000000")), Map.entry("SGD", new java.math.BigDecimal("0.580000000000")));
+    public static final Map<String, java.math.BigDecimal> FX_RATE_TO_USD = Map.ofEntries(
+            Map.entry("USD", new java.math.BigDecimal("1.000000000000")),
+            Map.entry("GBP", new java.math.BigDecimal("1.350000000000")), // ~1 GBP = 1.35 USD :contentReference[oaicite:0]{index=0}
+            Map.entry("EUR", new java.math.BigDecimal("1.175000000000")), // ~1 EUR = 1.17–1.18 USD :contentReference[oaicite:1]{index=1}
+            Map.entry("CAD", new java.math.BigDecimal("0.725000000000")), // ~0.72–0.73 USD per CAD :contentReference[oaicite:2]{index=2}
+            Map.entry("BRL", new java.math.BigDecimal("0.186000000000")), // ~0.186–0.189 USD per BRL :contentReference[oaicite:3]{index=3}
+            Map.entry("INR", new java.math.BigDecimal("0.011360000000")), // ~₹88 per USD ⇒ 1/88 ≈ 0.01136 USD per INR :contentReference[oaicite:4]{index=4}
+            Map.entry("CNY", new java.math.BigDecimal("0.140500000000")), // ~0.1405 USD per CNY :contentReference[oaicite:5]{index=5}
+            Map.entry("KRW", new java.math.BigDecimal("0.000720000000")), // ~0.000719–0.000725 USD per KRW :contentReference[oaicite:6]{index=6}
+            Map.entry("JPY", new java.math.BigDecimal("0.006750000000")), // ~0.00674–0.00685 USD per JPY :contentReference[oaicite:7]{index=7}
+            Map.entry("AUD", new java.math.BigDecimal("0.659000000000")), // ~0.655–0.66 USD per AUD :contentReference[oaicite:8]{index=8}
+            Map.entry("ZAR", new java.math.BigDecimal("0.057500000000")), // ~0.055–0.058 USD per ZAR :contentReference[oaicite:9]{index=9}
+            Map.entry("AED", new java.math.BigDecimal("0.272294000000")), // peg: 1 USD = 3.6725 AED ⇒ 1 AED = 0.272294 USD :contentReference[oaicite:10]{index=10}
+            Map.entry("SGD", new java.math.BigDecimal("0.780000000000"))  // ~0.775–0.786 USD per SGD :contentReference[oaicite:11]{index=11}
+    );
 
     private Data() {
-    }
-
-    /**
-     * Convenience: safe lookup with default 1 for GBP (and unknowns).
-     */
-    public static java.math.BigDecimal rateToGbp(String ccy) {
-        String k = ccy == null ? "" : ccy.trim().toUpperCase(java.util.Locale.ROOT);
-        if ("GBP".equals(k)) {
-            return java.math.BigDecimal.ONE;
-        }
-        return FX_RATE_TO_GBP.getOrDefault(k, java.math.BigDecimal.ONE);
     }
 
     /**

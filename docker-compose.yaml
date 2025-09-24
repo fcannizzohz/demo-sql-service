@@ -102,7 +102,7 @@ services:
       - "--days-past"
       - "2" # Start the simulated timeline N days in the past
       - "--rate"
-      - "3600" # 1 real second = 3600 simulated seconds
+      - "3600" # 1 real second = 600 simulated seconds
 
 networks:
   default:
