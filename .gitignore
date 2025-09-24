@@ -8,3 +8,4 @@ superset_home/.*
 __pycache__/
 __pycache__/*.pyc
 .idea/workspace.xml
+.DS_Store
