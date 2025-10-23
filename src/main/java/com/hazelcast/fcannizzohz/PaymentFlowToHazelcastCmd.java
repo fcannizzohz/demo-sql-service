@@ -13,6 +13,12 @@ import java.time.ZoneOffset;
 public class PaymentFlowToHazelcastCmd
         implements Runnable {
 
+    @Option(names = {"-o", "--output-dir"}, description = "Optional output directory of jsonl logs")
+    String outputDir;
+
+    @Option(names = {"-x", "--disable-hazelcast"}, defaultValue = "false", description = "Disable Hazelcast for debug purposes (default: ${DEFAULT-VALUE})")
+    String disableHazelcast;
+
     @Option(names = {"-c", "--cluster"}, defaultValue = "dev", description = "Hazelcast cluster name (default: ${DEFAULT-VALUE})")
     String cluster;
 
@@ -60,7 +66,7 @@ public class PaymentFlowToHazelcastCmd
 
         try {
             // Preferred: pass the clock through
-            PaymentFlowToHazelcast.run(cluster, member, minTxCount, genPollSec, clock, rate, switchToRealWhenCaughtUp);
+            PaymentFlowToHazelcast.run(disableHazelcast, cluster, member, minTxCount, genPollSec, clock, rate, switchToRealWhenCaughtUp, outputDir);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

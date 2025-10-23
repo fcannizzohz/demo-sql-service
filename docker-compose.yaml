@@ -1,87 +1,30 @@
 services:
-  hazelcast1:
-    image: hazelcast/hazelcast-enterprise:latest
-    ports:
-      - "5701:5701"
+  loki:
+    image: grafana/loki:3.1.1
+    command: -config.file=/etc/loki/config.yml
+    ports: ["3100:3100"]
     volumes:
-      - ./src/main/resources:/home/hazelcast/data
-    environment:
-      - HAZELCAST_CONFIG=/home/hazelcast/data/hazelcast.yaml
-      - HZ_LICENSEKEY=${HZ_LICENSEKEY}
+      - ./dashboards/grafana/loki-config.yml:/etc/loki/config.yml:ro
+      #- loki-data:/loki
 
-  hazelcast2:
-    image: hazelcast/hazelcast-enterprise:latest
+  promtail:
+    image: grafana/promtail:3.1.1
+    command: -config.file=/etc/promtail/config.yml
     volumes:
-      - ./src/main/resources:/home/hazelcast/data
-    environment:
-      - HAZELCAST_CONFIG=/home/hazelcast/data/hazelcast.yaml
-      - HZ_LICENSEKEY=${HZ_LICENSEKEY}
+      - ./dashboards/grafana/promtail-config.yml:/etc/promtail/config.yml:ro
+      - ./out:/logs:ro   # your JSONL directory
 
-  management-center:
-    image: hazelcast/management-center:latest
-    ports:
-    - "8080:8080"
+  grafana:
+    image: grafana/grafana:11.2.0
     environment:
-    - MC_DEFAULT_CLUSTER=dev
-    - MC_DEFAULT_CLUSTER_MEMBERS=hazelcast1,hazelcast2
-
-  superset:
-    build:
-      context: .
-      dockerfile: Dockerfile.superset
-    container_name: superset
-    ports:
-      - "8088:8088"
-    environment:
-      - SUPERSET_SECRET_KEY=supersecret
-      - FLASK_ENV=development     # switches Flask into dev mode
-      - FLASK_DEBUG=1             # enable debugger & live reload
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin1
+      - GF_AUTH_DISABLE_LOGIN_FORM=false
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+    ports: ["3000:3000"]
+    depends_on: [loki]
     volumes:
-      # Mount your local ./superset_home into the container
-      - ./superset_home:/app/superset_home
-    command: >
-      /bin/bash -c "
-        superset db upgrade &&
-        superset init &&
-        superset run -h 0.0.0.0 -p 8088"
-
-
-  restq:
-    build:
-      context: .
-      dockerfile: Dockerfile.restq
-    image: hazelcast-restq:latest
-    container_name: restq
-    depends_on:
-      - hazelcast1
-      - hazelcast2
-    environment:
-      # Point the Python client at your cluster
-      HZ_CLUSTER_MEMBERS: hazelcast1:5701,hazelcast2:5701
-
-      # Optional robust client timeouts & heartbeats (ms)
-      HZ_CONNECTION_TIMEOUT: 10000
-      HZ_CONNECTION_ATTEMPT_LIMIT: 3
-      HZ_CONNECTION_ATTEMPT_PERIOD: 3000
-      HZ_HEARTBEAT_INTERVAL: 5000
-      HZ_HEARTBEAT_TIMEOUT: 20000
-      HZ_INVOCATION_TIMEOUT: 60000
-
-      # REST behaviour (read-only already enforced in your code)
-      DEFAULT_TIMEOUT: 30
-      DEFAULT_CURSOR_BUFFER: 2048
-      STREAM_CHUNK_ROWS: 4096
-      RATE_LIMIT_RPS: 50
-      RATE_LIMIT_BURST: 100
-
-      # If you prefer URL instead of HZ_* vars:
-      # DB_URL: hazelcast+python://hazelcast1:5701
-
-      # Uvicorn workers (overridable)
-      UVICORN_WORKERS: 2
-    ports:
-      - "8000:8000"
-    restart: unless-stopped
+      - ./dashboards/grafana/grafana-provisioning:/etc/grafana/provisioning
 
   producer:
     profiles: ["producer"]
@@ -89,10 +32,12 @@ services:
       context: .
       dockerfile: Dockerfile.demo
     image: demo-sql-service-java
-    depends_on:
-      - hazelcast1
+    volumes:
+      - ./out:/app/out
     command:
       - "com.hazelcast.fcannizzohz.PaymentFlowToHazelcastCmd" # Class to run the main() of
+      - "--disable-hazelcast"
+      - "true"
       - "--cluster"
       - "dev" # pass the hz clusterName
       - "--member"
@@ -102,9 +47,11 @@ services:
       - "--rate"
       - "600" # 1 real second = 600 simulated seconds
       - "--min-tx-count"
-      - "100"
+      - "500"
       - "--gen-poll-sec"
-      - "15"
+      - "1"
+      - "--output-dir"
+      - "/app/out"
 
 networks:
   default:

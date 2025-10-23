@@ -31,6 +31,9 @@ public final class FxSeederPips {
         if (asOf == null) {
             asOf = LocalDate.now();
         }
+        if(hz == null) {
+            return;
+        }
 
         final SqlService sql = hz.getSql();
         final Random rnd = (rngSeed == null) ? new Random() : new Random(rngSeed);

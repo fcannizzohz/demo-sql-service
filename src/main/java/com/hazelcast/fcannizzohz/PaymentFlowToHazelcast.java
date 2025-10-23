@@ -46,22 +46,29 @@ public final class PaymentFlowToHazelcast {
     private static final DateTimeFormatter ISO_OFFSET = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
     private static final long ONE_SECOND_NANOS = 1_000_000_000L;
+    private static JsonlEventFileWriter fileWriter;
 
     private PaymentFlowToHazelcast() {
     }
 
-    public static void run(String clusterName, String memberAddress, int minTxCount, int genPollSec, Clock clock, double rate, boolean switchToRealWhenCaughtUp) {
-        // 1) Start member (or connect a client instead if you have a remote cluster)
-        ClientConfig cfg = new ClientConfig();
-        cfg.setClusterName(clusterName);                  // default for hazelcast/hazelcast:latest
-        ClientNetworkConfig net = cfg.getNetworkConfig();
-        net.addAddress(memberAddress);           // point at your Docker container
+    public static void run(String disableHazelcast, String clusterName, String memberAddress, int minTxCount, int genPollSec, Clock clock, double rate, boolean switchToRealWhenCaughtUp, String outputDir) throws Exception {
 
-        HazelcastInstance hz = HazelcastClient.newHazelcastClient(cfg);
+        fileWriter = new JsonlEventFileWriter(outputDir);
+        HazelcastInstance hz = null;
+        boolean dh = Boolean.parseBoolean(disableHazelcast);
+        if(!dh) {
+            // 1) Start member (or connect a client instead if you have a remote cluster)
+            ClientConfig cfg = new ClientConfig();
+            cfg.setClusterName(clusterName);                  // default for hazelcast/hazelcast:latest
+            ClientNetworkConfig net = cfg.getNetworkConfig();
+            net.addAddress(memberAddress);           // point at your Docker container
 
-        // 2) Create JSON mappings (idempotent)
-        runSqlScriptFromClasspath(hz.getSql(), MAPPINGS_SQL);
+            hz = HazelcastClient.newHazelcastClient(cfg);
 
+            // 2) Create JSON mappings (idempotent)
+            runSqlScriptFromClasspath(hz.getSql(), MAPPINGS_SQL);
+
+        }
         startRealtimeGenerationRandomCountry(hz, minTxCount, genPollSec, clock, rate, switchToRealWhenCaughtUp);
     }
 
@@ -77,7 +84,17 @@ public final class PaymentFlowToHazelcast {
         java.time.LocalDate lastSeededDate = null;
 
         final ThreadLocalRandom rnd = ThreadLocalRandom.current();
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> { try { System.out.println("\nStopping generator…"); hz.shutdown(); } catch (Throwable ignore) {} }));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                System.out.println("\nStopping generator…");
+                if(hz != null) {
+                    hz.shutdown();
+                }
+                fileWriter.close();
+            } catch (Throwable ignore) {
+
+            }
+        }));
 
         // ---- scheduling state (may change if we switch clocks) ----
         Clock clock = initialClock;
@@ -116,7 +133,7 @@ public final class PaymentFlowToHazelcast {
                                                              .toLocalDate();
 
                 // seed only if the day rolled over
-                if (!today.equals(lastSeededDate)) {
+                if (!today.equals(lastSeededDate)  && hz != null) {
                     FxSeederPips.seedFxRatesForDate(hz, today, 42L);
                     lastSeededDate = today;
                     System.out.println("[info] Seeded fx_rates for " + today);
@@ -135,17 +152,17 @@ public final class PaymentFlowToHazelcast {
 
                 try (InputStream painIn = new ByteArrayInputStream(painXml.getBytes(StandardCharsets.UTF_8))) {
                     var pacsList = Pain001ToPacs008Converter.convertPain001_03_to_Pacs008_03_PerTx(painIn, "DEUTDEFFXXX", "BNPAFRPPXXX");
-                    writePain(hz, painXml);
+                    writePain(hz, clock, painXml);
                     for (String pacsXml : pacsList) {
                         try (InputStream pacsIn = new ByteArrayInputStream(pacsXml.getBytes(StandardCharsets.UTF_8))) {
                             String camtXml = Pacs008ToCamt054Converter.pacs008_to_camt054_debtor(pacsIn);
-                            writePacs(hz, pacsXml);
-                            writeCamt(hz, camtXml);
+                            writePacs(hz, clock, pacsXml);
+                            writeCamt(hz, clock, camtXml);
                         }
                     }
                 }
 
-                if (++tick % 10 == 0) {
+                if (++tick % 10 == 0 && hz!=null) {
                     String q = """
                     SELECT 'pain_tx' AS metric, CAST(COUNT(*) AS BIGINT) AS cnt FROM pain001_credit_transfer_transaction
                     UNION ALL
@@ -194,7 +211,7 @@ public final class PaymentFlowToHazelcast {
     // ------------------------------------------------------------------------
     // WRITE HELPERS (PAIN / PACS / CAMT)
     // ------------------------------------------------------------------------
-    private static void writePain(HazelcastInstance hz, String painXml)
+    private static void writePain(HazelcastInstance hz, Clock clock, String painXml)
             throws Exception {
         Document doc = parseXml(painXml);
         XPath xp = XPathFactory.newInstance().newXPath();
@@ -218,7 +235,11 @@ public final class PaymentFlowToHazelcast {
         putIfPresent(gh, "NumberOfTransactions", toInteger(nbTxs));
         putIfPresent(gh, "ControlSum", toDecimal(ctrl));
         putIfPresent(gh, "InitiatingPartyName", initNm);
-        putJson(hz.getMap(M_PAIN_GHDR), msgId, gh);
+        Map<String, Object> flattened = newJsonlMap(clock);
+        flattened.putAll(gh);
+        if(hz != null) {
+            putJson(hz.getMap(M_PAIN_GHDR), msgId, gh);
+        }
 
         // PaymentInformation nodes
         NodeList pmtInfNodes = (NodeList) xp.evaluate(base + "/" + ln("PmtInf"), doc, XPathConstants.NODESET);
@@ -256,8 +277,10 @@ public final class PaymentFlowToHazelcast {
             putIfPresent(pi, "LocalInstrumentCode", lclInstrm);
             putIfPresent(pi, "CategoryPurposeCode", ctgyPurp);
             putIfPresent(pi, "ChargeBearer", chrgBr);
-            putJson(hz.getMap(M_PAIN_PMTINF), pmtInfId, pi);
-
+            if(hz != null) {
+                putJson(hz.getMap(M_PAIN_PMTINF), pmtInfId, pi);
+            }
+            flattened.putAll(pi);
             // Transactions
             NodeList txs = (NodeList) xp.evaluate(ln("CdtTrfTxInf"), n, XPathConstants.NODESET);
             for (int t = 0; t < txs.getLength(); t++) {
@@ -289,12 +312,17 @@ public final class PaymentFlowToHazelcast {
                 putIfPresent(row, "ChargeBearer", chrgBrTx);
 
                 String txKey = isBlank(e2e) ? UUID.randomUUID().toString() : e2e;
-                putJson(hz.getMap(M_PAIN_TX), txKey, row);
+                flattened.putAll(row);
+                if (hz != null) {
+                    putJson(hz.getMap(M_PAIN_TX), txKey, row);
+                }
             }
         }
+
+        fileWriter.appendEvent(toJson(flattened));
     }
 
-    private static void writePacs(HazelcastInstance hz, String pacsXml)
+    private static void writePacs(HazelcastInstance hz, Clock clock, String pacsXml)
             throws Exception {
         Document doc = parseXml(pacsXml);
         XPath xp = XPathFactory.newInstance().newXPath();
@@ -305,6 +333,7 @@ public final class PaymentFlowToHazelcast {
         String cre = eval(xp, doc, base + "/" + ln("GrpHdr") + "/" + ln("CreDtTm"));
 
         NodeList txs = (NodeList) xp.evaluate(base + "/" + ln("CdtTrfTxInf"), doc, XPathConstants.NODESET);
+        Map<String, Object> flattened = newJsonlMap(clock);
         for (int i = 0; i < txs.getLength(); i++) {
             Node tx = txs.item(i);
 
@@ -347,11 +376,15 @@ public final class PaymentFlowToHazelcast {
             putIfPresent(row, "ChargeBearer", chrgBr);
 
             String key = !isBlank(txId) ? txId : (!isBlank(e2e) ? e2e : UUID.randomUUID().toString());
-            putJson(hz.getMap(M_PACS_TX), key, row);
+            flattened.putAll(row);
+            if(hz != null) {
+                putJson(hz.getMap(M_PACS_TX), key, row);
+            }
         }
+        fileWriter.appendEvent(toJson(flattened));
     }
 
-    private static void writeCamt(HazelcastInstance hz, String camtXml)
+    private static void writeCamt(HazelcastInstance hz, Clock clock, String camtXml)
             throws Exception {
         Document doc = parseXml(camtXml);
         XPath xp = XPathFactory.newInstance().newXPath();
@@ -360,6 +393,8 @@ public final class PaymentFlowToHazelcast {
 
         String grpMsgId = eval(xp, doc, base + "/" + ln("GrpHdr") + "/" + ln("MsgId"));
         String grpCre = eval(xp, doc, base + "/" + ln("GrpHdr") + "/" + ln("CreDtTm"));
+
+        Map<String, Object> flattened = newJsonlMap(clock);
 
         Node ntf = (Node) xp.evaluate(base + "/" + ln("Ntfctn"), doc, XPathConstants.NODE);
         if (ntf != null) {
@@ -379,8 +414,10 @@ public final class PaymentFlowToHazelcast {
             if (isBlank(ntfId)) {
                 throw new IllegalArgumentException("CAMT Notification Id not found.");
             }
-            putJson(hz.getMap(M_CAMT_NTF), ntfId, row);
-
+            flattened.putAll(row);
+            if(hz != null) {
+                putJson(hz.getMap(M_CAMT_NTF), ntfId, row);
+            }
             NodeList entries = (NodeList) xp.evaluate(ln("Ntry"), ntf, XPathConstants.NODESET);
             for (int i = 0; i < entries.getLength(); i++) {
                 Node en = entries.item(i);
@@ -410,9 +447,20 @@ public final class PaymentFlowToHazelcast {
                 putIfPresent(erow, "CreditorAgentBICFI", cdtrBic);
 
                 String key = !isBlank(ntryRef) ? ntryRef : UUID.randomUUID().toString();
-                putJson(hz.getMap(M_CAMT_ENTRY), key, erow);
+                flattened.putAll(erow);
+                if(hz != null) {
+                    putJson(hz.getMap(M_CAMT_ENTRY), key, erow);
+                }
             }
         }
+        fileWriter.appendEvent(toJson(flattened));
+    }
+
+    private static Map<String, Object> newJsonlMap(Clock clock) {
+        Map<String, Object> flattened = new LinkedHashMap<>();
+        flattened.put("ts", clock.instant().toString());
+        flattened.put("epoch", clock.instant().toEpochMilli());
+        return flattened;
     }
 
     // ------------------------------------------------------------------------
@@ -480,12 +528,14 @@ public final class PaymentFlowToHazelcast {
 
     private static void putJson(IMap<String, HazelcastJsonValue> map, String key, Map<String, Object> payload) {
         String json = toJson(payload);
-        System.out.println(json);
         map.set(key, new HazelcastJsonValue(json));
     }
 
     // Simple JSON builder to avoid extra deps; replace with Jackson if you prefer.
     private static String toJson(Map<String, Object> m) {
+        if(m.isEmpty()) {
+            return "";
+        }
         StringBuilder sb = new StringBuilder(256);
         sb.append('{');
         boolean first = true;

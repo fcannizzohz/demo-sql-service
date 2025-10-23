@@ -1,0 +1,156 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_LOKI",
+      "label": "Loki",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "loki",
+      "pluginName": "Loki"
+    }
+  ],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
+    { "type": "panel", "id": "table", "name": "Table", "version": "" },
+    { "type": "datasource", "id": "loki", "name": "Loki", "version": "2.8.0" }
+  ],
+  "annotations": { "list": [{ "builtIn": 1, "datasource": { "type": "grafana", "uid": "-- Grafana --" }, "enable": true, "hide": false, "iconColor": "rgba(0, 211, 255, 1)", "name": "Annotations & Alerts", "type": "dashboard" }] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "iteration": 1,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Net Liquidity by Currency (CRDT − DBIT) — Today",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "orientation": "auto", "textMode": "value", "colorMode": "value", "graphMode": "none", "justifyMode": "auto" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum by (ccy) ( sum_over_time( {job=\"payments_jsonl\",event_type=\"camt\",Status=\"BOOK\",CreditDebitIndicator=\"CRDT\"} | json | label_format ccy=\"{{.Currency}}\" | unwrap Amount [$__interval] ) )",
+          "legendFormat": "CRDT {{ccy}}",
+          "hide": false
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum by (ccy) ( sum_over_time( {job=\"payments_jsonl\",event_type=\"camt\",Status=\"BOOK\",CreditDebitIndicator=\"DBIT\"} | json | label_format ccy=\"{{.Currency}}\" | unwrap Amount [$__interval] ) )",
+          "legendFormat": "DBIT {{ccy}}",
+          "hide": false
+        }
+      ],
+      "transformations": [
+        { "id": "seriesToColumns", "options": { "byField": "ccy" } },
+        { "id": "merge", "options": {} },
+        {
+          "id": "calculateField",
+          "options": {
+            "mode": "binary",
+            "binary": { "left": "CRDT .*", "operator": "-", "right": "DBIT .*" },
+            "alias": "Net"
+          }
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "currency" }, "overrides": [] }
+    },
+    {
+      "type": "table",
+      "title": "Liquidity by DebtorName & Currency (CRDT and DBIT totals)",
+      "gridPos": { "h": 10, "w": 16, "x": 8, "y": 0 },
+      "options": { "showHeader": true, "footer": { "enablePagination": true, "fields": "", "reducer": ["sum"], "show": false } },
+      "targets": [
+        {
+          "refId": "C",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum_over_time( {job=\"payments_jsonl\",event_type=\"camt\",Status=\"BOOK\",CreditDebitIndicator=\"CRDT\"}\n| json\n| line_format \"{{.DebtorName}}|{{.Currency}}|{{.Amount}}\"\n| regexp \"(?P<DebtorName>.*)\\|(?P<Currency>[A-Z]{3})\\|(?P<CRDT>[0-9]+(?:\\.[0-9]+)?)\"\n| unwrap CRDT [$__range])",
+          "legendFormat": "CRDT"
+        },
+        {
+          "refId": "D",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum_over_time( {job=\"payments_jsonl\",event_type=\"camt\",Status=\"BOOK\",CreditDebitIndicator=\"DBIT\"}\n| json\n| line_format \"{{.DebtorName}}|{{.Currency}}|{{.Amount}}\"\n| regexp \"(?P<DebtorName>.*)\\|(?P<Currency>[A-Z]{3})\\|(?P<DBIT>[0-9]+(?:\\.[0-9]+)?)\"\n| unwrap DBIT [$__range])",
+          "legendFormat": "DBIT"
+        }
+      ],
+      "transformations": [
+        { "id": "merge", "options": {} },
+        { "id": "groupBy", "options": { "fields": { "DebtorName": { "aggregations": ["first"], "operation": "groupby" }, "Currency": { "aggregations": ["first"], "operation": "groupby" }, "CRDT": { "aggregations": ["sum"], "operation": "aggregate" }, "DBIT": { "aggregations": ["sum"], "operation": "aggregate" } }, "rowLimit": 5000 } },
+        { "id": "calculateField", "options": { "mode": "binary", "binary": { "left": "CRDT", "operator": "-", "right": "DBIT" }, "alias": "Net" } }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "align": "auto" } }, "overrides": [{ "matcher": { "id": "byName", "options": "CRDT" }, "properties": [{ "id": "unit", "value": "currency" }] }, { "matcher": { "id": "byName", "options": "DBIT" }, "properties": [{ "id": "unit", "value": "currency" }] }, { "matcher": { "id": "byName", "options": "Net" }, "properties": [{ "id": "unit", "value": "currency" }] }] }
+    },
+    {
+      "type": "timeseries",
+      "title": "Net Liquidity Over Time by Currency",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "refId": "E",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum by (ccy) ( sum_over_time( {job=\"payments_jsonl\", event_type=\"camt\", Status=\"BOOK\", CreditDebitIndicator=\"CRDT\"} | json | label_format ccy=\"{{.Currency}}\" | unwrap Amount [$__interval]) )",
+          "legendFormat": "CRDT {{ccy}}"
+        },
+        {
+          "refId": "F",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum by (ccy) ( sum_over_time( {job=\"payments_jsonl\", event_type=\"camt\", Status=\"BOOK\", CreditDebitIndicator=\"DBIT\"} | json | label_format ccy=\"{{.Currency}}\" | unwrap Amount [$__interval]) )",
+          "legendFormat": "DBIT {{ccy}}"
+        }
+      ],
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } },
+      "fieldConfig": { "defaults": { "unit": "currency" }, "overrides": [] }
+    },
+    {
+      "type": "stat",
+      "title": "Total Liquidity by Currency (All parties)",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 18 },
+      "targets": [
+        {
+          "refId": "G1",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum by (ccy) ( sum_over_time( {job=\"payments_jsonl\",event_type=\"camt\", Status=\"BOOK\", CreditDebitIndicator=\"CRDT\"} | json | label_format ccy=\"{{.Currency}}\" | unwrap Amount [$__range] ) )",
+          "legendFormat": "CRDT {{ccy}}"
+        },
+        {
+          "refId": "G2",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum by (ccy) ( sum_over_time( {job=\"payments_jsonl\",event_type=\"camt\", Status=\"BOOK\", CreditDebitIndicator=\"DBIT\"} | json | label_format ccy=\"{{.Currency}}\" | unwrap Amount [$__range] ) )",
+          "legendFormat": "DBIT {{ccy}}"
+        }
+      ],
+      "transformations": [
+        { "id": "seriesToColumns", "options": { "byField": "ccy" } },
+        { "id": "merge", "options": {} },
+        {
+          "id": "calculateField",
+          "options": {
+            "mode": "binary",
+            "binary": { "left": "CRDT .*", "operator": "-", "right": "DBIT .*" },
+            "alias": "Net"
+          }
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "currency" }, "overrides": [] }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["payments", "liquidity", "camt"],
+  "templating": {
+    "list": []
+  },
+  "time": { "from": "now-24h", "to": "now" },
+  "timezone": "",
+  "title": "Liquidity by Currency",
+  "uid": "hz-liquidity-ccy",
+  "version": 2,
+  "weekStart": ""
+}

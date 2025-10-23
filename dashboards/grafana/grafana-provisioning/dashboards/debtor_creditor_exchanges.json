@@ -1,0 +1,81 @@
+{
+  "__inputs": [
+    { "name": "DS_LOKI", "label": "Loki", "type": "datasource", "pluginId": "loki", "pluginName": "Loki" }
+  ],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "table", "name": "Table", "version": "" },
+    { "type": "panel", "id": "barchart", "name": "Bar chart", "version": "" },
+    { "type": "datasource", "id": "loki", "name": "Loki", "version": "2.8.0" }
+  ],
+  "title": "Debtor ↔ Creditor Exchanges",
+  "uid": "hz-debcred",
+  "schemaVersion": 38,
+  "time": { "from": "now-24h", "to": "now" },
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "PACS Value over Time by Debtor BIC (Top 10)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "currency" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "topk(\n  10,\n  sum by (DebtorAgentBICFI) (\n    sum_over_time(\n      {job=\"payments_jsonl\", event_type=\"pacs\"}\n      | label_drop filename,host,__path__\n      | json\n      | unwrap InterbankSettlementAmount\n    [$__interval])\n  )\n)",
+          "legendFormat": "{{DebtorAgentBICFI}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "PACS Value over Time by Creditor BIC (Top 10)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "currency" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "B",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "topk(\n  10,\n  sum by (CreditorAgentBICFI) (\n    sum_over_time(\n      {job=\"payments_jsonl\", event_type=\"pacs\"}\n      | label_drop filename,host,__path__\n      | json\n      | unwrap InterbankSettlementAmount\n    [$__interval])\n  )\n)",
+          "legendFormat": "{{CreditorAgentBICFI}}"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Debtor → Creditor Pairs (Value over lookback)",
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 8 },
+      "options": { "showHeader": true },
+      "fieldConfig": { "defaults": { "unit": "currency" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "C",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "{job=\"payments_jsonl\", event_type=\"pacs\"}\n| label_drop filename,host,__path__\n| json\n| line_format \"{{.DebtorName}}|{{.CreditorName}}|{{.InterbankSettlementAmount}}\"\n| regexp \"(?P<Debtor>.*)\\|(?P<Creditor>.*)\\|(?P<Amount>[0-9]+(?:\\.[0-9]+)?)\"\n| unwrap Amount\n| sum_over_time(Amount[$__range])",
+          "legendFormat": "{{Debtor}}→{{Creditor}}"
+        }
+      ],
+      "transformations": [
+        { "id": "groupBy", "options": { "fields": { "Debtor": { "aggregations": ["first"], "operation": "groupby" }, "Creditor": { "aggregations": ["first"], "operation": "groupby" }, "Amount": { "aggregations": ["lastNotNull"], "operation": "aggregate" } }, "rowLimit": 5000 } },
+        { "id": "sortBy", "options": { "sort": [ { "field": "Amount", "desc": true } ] } }
+      ]
+    },
+    {
+      "type": "barchart",
+      "title": "Country Corridor Totals (Debtor→Creditor)",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "currency" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "D",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "topk(\n  50,\n  sum by (route) (\n    sum_over_time(\n      {job=\"payments_jsonl\", event_type=\"pacs\"}\n      | label_drop filename,host,__path__\n      | json\n      | unwrap InterbankSettlementAmount\n    [$__range])\n  )\n)",
+          "legendFormat": "{{route}}"
+        }
+      ]
+    }
+  ],
+  "templating": { "list": [] }
+}

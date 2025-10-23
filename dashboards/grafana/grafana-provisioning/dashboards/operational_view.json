@@ -1,0 +1,276 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_LOKI",
+      "label": "Loki",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "loki",
+      "pluginName": "Loki"
+    }
+  ],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "panel", "id": "timeseries", "name": "Time series", "version": "" },
+    { "type": "panel", "id": "stat", "name": "Stat", "version": "" },
+    { "type": "panel", "id": "barchart", "name": "Bar chart", "version": "" },
+    { "type": "panel", "id": "table", "name": "Table", "version": "" },
+    { "type": "datasource", "id": "loki", "name": "Loki", "version": "2.8.0" }
+  ],
+  "title": "Payments Command Centre",
+  "uid": "hz-payments-cmd",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["payments", "operations", "pacs", "camt", "pain"],
+  "time": { "from": "now-24h", "to": "now" },
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Total PACS Value (Last 24h)",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "currency" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum( sum_over_time( {job=\"payments_jsonl\", event_type=\"pacs\"} | label_drop filename,host,__path__ | json | unwrap InterbankSettlementAmount [$__range]) )",
+          "legendFormat": "PACS Total"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Net Liquidity (CRDT − DBIT) — All Currencies",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "currency" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "B1",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum( sum_over_time( {job=\"payments_jsonl\", event_type=\"camt\", Status=\"BOOK\", CreditDebitIndicator=\"CRDT\"} | json | unwrap Amount [$__range]) )",
+          "legendFormat": "CRDT"
+        },
+        {
+          "refId": "B2",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum( sum_over_time( {job=\"payments_jsonl\", event_type=\"camt\", Status=\"BOOK\", CreditDebitIndicator=\"DBIT\"} | json | unwrap Amount [$__range]) )",
+          "legendFormat": "DBIT"
+        }
+      ],
+      "transformations": [
+        { "id": "seriesToColumns", "options": { "byField": "Metric" } },
+        { "id": "calculateField", "options": { "mode": "binary", "binary": { "left": "CRDT", "operator": "-", "right": "DBIT" }, "alias": "Net" } }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Events Processed (All Types)",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "refId": "C",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum( count_over_time( {job=\"payments_jsonl\"} | label_drop filename,host,__path__ [$__range]) )",
+          "legendFormat": "Events"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Cross-Border Share (by Count)",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "value" },
+      "targets": [
+        {
+          "refId": "D1",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum by (class) ( count_over_time( {job=\"payments_jsonl\", event_type=\"pacs\"} | label_format class=\"{{if eq .deb_cc .cred_cc}}domestic{{else}}cross_border{{end}}\" [$__range]) )",
+          "legendFormat": "{{class}}"
+        }
+      ],
+      "transformations": [
+        { "id": "seriesToColumns", "options": { "byField": "class" } },
+        { "id": "calculateField", "options": { "mode": "reduceRow", "reduce": { "reducer": "sum" }, "alias": "Total" } },
+        { "id": "calculateField", "options": { "mode": "binary", "binary": { "left": "cross_border", "operator": "/", "right": "Total" }, "alias": "CrossBorder %" } }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] }
+    },
+    {
+      "type": "timeseries",
+      "title": "Throughput (PACS msgs/min)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [
+        {
+          "refId": "E",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum( rate( {job=\"payments_jsonl\", event_type=\"pacs\"} | label_drop filename,host,__path__ [1m]) )",
+          "legendFormat": "PACS msg/s"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Settlement Value Over Time (PACS)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "fieldConfig": { "defaults": { "unit": "currency" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "F",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum( sum_over_time( {job=\"payments_jsonl\", event_type=\"pacs\"} | json | unwrap InterbankSettlementAmount [$__interval]) )",
+          "legendFormat": "Total"
+        }
+      ]
+    },
+    {
+      "type": "barchart",
+      "title": "Event Mix by Type",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 12 },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "refId": "G",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum by (event_type) ( count_over_time( {job=\"payments_jsonl\"} | label_drop filename,host,__path__ [$__range]) )",
+          "legendFormat": "{{event_type}}"
+        }
+      ]
+    },
+    {
+      "type": "barchart",
+      "title": "Cross-Border vs Domestic (Count)",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 12 },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "refId": "H",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum by (class) ( count_over_time( {job=\"payments_jsonl\", event_type=\"pacs\"} | label_format class=\"{{if eq .deb_cc .cred_cc}}domestic{{else}}cross_border{{end}}\" [$__range]) )",
+          "legendFormat": "{{class}}"
+        }
+      ]
+    },
+    {
+      "type": "barchart",
+      "title": "Top 10 Corridors by Value",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 12 },
+      "fieldConfig": { "defaults": { "unit": "currency" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "I",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "topk(10, sum by (route) ( sum_over_time( {job=\"payments_jsonl\", event_type=\"pacs\"} | json | unwrap InterbankSettlementAmount [$__range]) ) )",
+          "legendFormat": "{{route}}"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Top Debtor BICs (Value, lookback)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "options": { "showHeader": true },
+      "fieldConfig": { "defaults": { "unit": "currency" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "J",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "topk(10, sum by (DebtorAgentBICFI) ( sum_over_time( {job=\"payments_jsonl\", event_type=\"pacs\"} | json | unwrap InterbankSettlementAmount [$__range]) ) )",
+          "legendFormat": "{{DebtorAgentBICFI}}"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Top Creditor BICs (Value, lookback)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "options": { "showHeader": true },
+      "fieldConfig": { "defaults": { "unit": "currency" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "K",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "topk(10, sum by (CreditorAgentBICFI) ( sum_over_time( {job=\"payments_jsonl\", event_type=\"pacs\"} | json | unwrap InterbankSettlementAmount [$__range]) ) )",
+          "legendFormat": "{{CreditorAgentBICFI}}"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Booked Rejections (CAMT, % of CAMT)",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 28 },
+      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "L1",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum( count_over_time( {job=\"payments_jsonl\", event_type=\"camt\", Status=\"RJCT\"} [$__range]) )",
+          "legendFormat": "RJCT"
+        },
+        {
+          "refId": "L2",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum( count_over_time( {job=\"payments_jsonl\", event_type=\"camt\"} [$__range]) )",
+          "legendFormat": "All CAMT"
+        }
+      ],
+      "transformations": [
+        { "id": "seriesToColumns", "options": { "byField": "Metric" } },
+        { "id": "calculateField", "options": { "mode": "binary", "binary": { "left": "RJCT", "operator": "/", "right": "All CAMT" }, "alias": "Reject %" } }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Booked Debits (DBIT, lookback)",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 28 },
+      "fieldConfig": { "defaults": { "unit": "currency" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "M",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum( sum_over_time( {job=\"payments_jsonl\", event_type=\"camt\", Status=\"BOOK\", CreditDebitIndicator=\"DBIT\"} | json | unwrap Amount [$__range]) )",
+          "legendFormat": "DBIT"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Booked Credits (CRDT, lookback)",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 28 },
+      "fieldConfig": { "defaults": { "unit": "currency" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "N",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum( sum_over_time( {job=\"payments_jsonl\", event_type=\"camt\", Status=\"BOOK\", CreditDebitIndicator=\"CRDT\"} | json | unwrap Amount [$__range]) )",
+          "legendFormat": "CRDT"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Net Liquidity Over Time (CRDT−DBIT)",
+      "gridPos": { "h": 8, "w": 12, "x": 18, "y": 28 },
+      "fieldConfig": { "defaults": { "unit": "currency" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "O1",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum_over_time( {job=\"payments_jsonl\", event_type=\"camt\", Status=\"BOOK\", CreditDebitIndicator=\"CRDT\"} | json | unwrap Amount [$__interval])",
+          "legendFormat": "CRDT"
+        },
+        {
+          "refId": "O2",
+          "datasource": { "type": "loki", "uid": "DS_LOKI" },
+          "expr": "sum_over_time( {job=\"payments_jsonl\", event_type=\"camt\", Status=\"BOOK\", CreditDebitIndicator=\"DBIT\"} | json | unwrap Amount [$__interval])",
+          "legendFormat": "DBIT"
+        }
+      ],
+      "transformations": [
+        { "id": "merge", "options": {} },
+        { "id": "calculateField", "options": { "mode": "binary", "binary": { "left": "CRDT", "operator": "-", "right": "DBIT" }, "alias": "Net" } }
+      ]
+    }
+  ],
+  "templating": { "list": [] }
+}
