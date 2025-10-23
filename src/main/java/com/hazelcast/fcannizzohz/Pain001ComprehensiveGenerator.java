@@ -2,7 +2,6 @@ package com.hazelcast.fcannizzohz;
 
 import java.io.StringWriter;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.OffsetDateTime;
@@ -12,6 +11,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Comprehensive pain.001.001.03 generator using com.hazelcast.fcannizzohz.Data.
@@ -73,7 +73,8 @@ public final class Pain001ComprehensiveGenerator {
             String dbtrCtry = pick(r, countries);
             String dbtrName = Data.debtorNameForCountry(dbtrCtry);
             String ccy = Data.currencyForCountry(dbtrCtry);
-            String dbtrBic = randomBic(r, dbtrCtry);
+            Bank dbtrBank = Data.pickBankForCountry(dbtrCtry, ThreadLocalRandom.current());
+            String dbtrBic = dbtrBank.bic8;
 
             int txCount = minTxPerInfo + r.nextInt(Math.max(1, (maxTxPerInfo - minTxPerInfo) + 1));
             overallTxs += txCount;
@@ -122,11 +123,7 @@ public final class Pain001ComprehensiveGenerator {
             xml.append("      </Dbtr>\n");
 
             // Debtor account
-            if (Data.isIbanCountry(dbtrCtry) && r.nextBoolean()) {
-                xml.append("      <DbtrAcct><Id><IBAN>").append(esc(randomIban(r, dbtrCtry))).append("</IBAN></Id></DbtrAcct>\n");
-            } else {
-                xml.append("      <DbtrAcct><Id><Othr>").append("<Id>").append(esc(randomAlnum(r, 16))).append("</Id>").append("<SchmeNm><Prtry>BBAN</Prtry></SchmeNm>").append("</Othr></Id></DbtrAcct>\n");
-            }
+            xml.append("      <DbtrAcct><Id><IBAN>").append(esc(Data.generateIbanForBank(dbtrBank, ThreadLocalRandom.current()))).append("</IBAN></Id></DbtrAcct>\n");
 
             // Debtor agent (sometimes BIC vs BICFI)
             xml.append("      <DbtrAgt><FinInstnId>");
@@ -149,12 +146,9 @@ public final class Pain001ComprehensiveGenerator {
                 String cdtrCtry = pick(r, countries);
                 String cdtrName = Data.debtorNameForCountry(cdtrCtry) + " Recipient";
                 String cdtrAcctXml;
-                if (Data.isIbanCountry(cdtrCtry) && r.nextBoolean()) {
-                    cdtrAcctXml = "<Id><IBAN>" + esc(randomIban(r, cdtrCtry)) + "</IBAN></Id>";
-                } else {
-                    cdtrAcctXml = "<Id><Othr><Id>" + esc(randomAlnum(r, 16)) + "</Id><SchmeNm><Prtry>BBAN</Prtry></SchmeNm></Othr></Id>";
-                }
-                String cdtrBic = randomBic(r, cdtrCtry);
+                Bank cdtrBank = Data.pickBankForCountry(cdtrCtry, ThreadLocalRandom.current());
+                cdtrAcctXml = "<Id><IBAN>" + esc(Data.generateIbanForBank(cdtrBank, ThreadLocalRandom.current())) + "</IBAN></Id>";
+                String cdtrBic = cdtrBank.bic8;
 
                 // RmtInf: mix of structured & unstructured
                 StringBuilder rmt = new StringBuilder();
@@ -243,8 +237,8 @@ public final class Pain001ComprehensiveGenerator {
         final String dbtrCtry = Data.normCountry((fixedDebtorCountry == null || fixedDebtorCountry.isBlank()) ? countries.get(r.nextInt(countries.size())) : fixedDebtorCountry);
         final String dbtrName = (fixedDebtorName == null || fixedDebtorName.isBlank()) ? Data.debtorNameForCountry(dbtrCtry) : fixedDebtorName;
         final String ccy = Data.currencyForCountry(dbtrCtry);
-        final String dbtrBic = randomBic(r, dbtrCtry);
-
+        Bank dbBank = Data.pickBankForCountry(dbtrCtry, ThreadLocalRandom.current());
+        final String dbtrBic = dbBank.bic8;
         final String msgId = "MSG-" + UUID.randomUUID();
         final OffsetDateTime now = OffsetDateTime.now(clock).withOffsetSameInstant(ZoneOffset.UTC);
         final String creDtTm = now.format(DT_FMT);
@@ -261,11 +255,8 @@ public final class Pain001ComprehensiveGenerator {
         xml.append("      <Dbtr><Nm>").append(esc(dbtrName)).append("</Nm></Dbtr>\n");
 
         // DbtrAcct
-        if (Data.isIbanCountry(dbtrCtry)) {
-            xml.append("      <DbtrAcct><Id><IBAN>").append(esc(randomIban(r, dbtrCtry))).append("</IBAN></Id></DbtrAcct>\n");
-        } else {
-            xml.append("      <DbtrAcct><Id><Othr><Id>").append(esc(randomAlnum(r, 16))).append("</Id><SchmeNm><Prtry>BBAN</Prtry></SchmeNm></Othr></Id></DbtrAcct>\n");
-        }
+        Bank dbtrBank = Data.pickBankForCountry(dbtrCtry, ThreadLocalRandom.current());
+        xml.append("      <DbtrAcct><Id><IBAN>").append(esc(Data.generateIbanForBank(dbtrBank, ThreadLocalRandom.current()))).append("</IBAN></Id></DbtrAcct>\n");
 
         // DbtrAgt (use BICFI in PACS-facing flows)
         xml.append("      <DbtrAgt><FinInstnId><BIC>").append(esc(dbtrBic)).append("</BIC></FinInstnId></DbtrAgt>\n");
@@ -279,12 +270,9 @@ public final class Pain001ComprehensiveGenerator {
             String cdtrCtry = countries.get(r.nextInt(countries.size()));
             String cdtrName = Data.debtorNameForCountry(cdtrCtry) + " Recipient";
             String cdtrAcctXml;
-            if (Data.isIbanCountry(cdtrCtry) && r.nextBoolean()) {
-                cdtrAcctXml = "<Id><IBAN>" + esc(randomIban(r, cdtrCtry)) + "</IBAN></Id>";
-            } else {
-                cdtrAcctXml = "<Id><Othr><Id>" + esc(randomAlnum(r, 16)) + "</Id><SchmeNm><Prtry>BBAN</Prtry></SchmeNm></Othr></Id>";
-            }
-            String cdtrBic = randomBic(r, cdtrCtry);
+            Bank creditorBank = Data.pickBankForCountry(cdtrCtry, ThreadLocalRandom.current());
+            cdtrAcctXml = "<Id><IBAN>" + esc(Data.generateIbanForBank(creditorBank, ThreadLocalRandom.current())) + "</IBAN></Id>";
+            String cdtrBic = creditorBank.bic8;
 
             // Simple remittance (both types possible)
             StringBuilder rmt = new StringBuilder();
@@ -333,58 +321,8 @@ public final class Pain001ComprehensiveGenerator {
         return BigDecimal.valueOf(v).setScale(2, RoundingMode.HALF_UP);
     }
 
-    /**
-     * Valid MOD97 IBAN, length from Data.ibanLength(country).
-     */
-    private static String randomIban(Random r, String country) {
-        String cc = Data.normCountry(country);
-        int len = Data.ibanLength(cc).orElseThrow(() -> new IllegalArgumentException("Not an IBAN country: " + cc));
-        int bbanLen = len - 4;
-
-        String bban = randomAlnum(r, bbanLen);
-
-        // Compute check digits: (BBAN + CC + "00") mod 97
-        String rearranged = bban + cc + "00";
-        StringBuilder numeric = new StringBuilder(rearranged.length() * 2);
-        for (char ch : rearranged.toCharArray()) {
-            if (Character.isLetter(ch)) {
-                int v = Character.toUpperCase(ch) - 'A' + 10;
-                numeric.append(v);
-            } else {
-                numeric.append(ch);
-            }
-        }
-        BigInteger mod = new BigInteger(numeric.toString()).mod(BigInteger.valueOf(97));
-        int check = 98 - mod.intValue();
-        String chk = (check < 10) ? "0" + check : Integer.toString(check);
-        return cc + chk + bban;
-    }
-
-    /**
-     * Synthetic BIC: 4 letters bank + 2 letters country + 2 alnum location + optional 3 alnum branch.
-     */
-    private static String randomBic(Random r, String country) {
-        String bank = randomLetters(r, 4);
-        String cty = Data.normCountry(country);
-        if (cty.length() != 2) {
-            cty = "XX";
-        }
-        String loc = randomAlnum(r, 2);
-        String branch = r.nextBoolean() ? randomAlnum(r, 3) : "";
-        return bank + cty + loc + branch;
-    }
-
     private static String randomAlnum(Random r, int n) {
         final String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        StringBuilder sb = new StringBuilder(n);
-        for (int i = 0; i < n; i++) {
-            sb.append(chars.charAt(r.nextInt(chars.length())));
-        }
-        return sb.toString();
-    }
-
-    private static String randomLetters(Random r, int n) {
-        final String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         StringBuilder sb = new StringBuilder(n);
         for (int i = 0; i < n; i++) {
             sb.append(chars.charAt(r.nextInt(chars.length())));
