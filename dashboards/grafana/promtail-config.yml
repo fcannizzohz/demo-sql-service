@@ -19,21 +19,34 @@ scrape_configs:
           __path__: /logs/*.jsonl
 
     pipeline_stages:
-      # 1) Parse JSON and extract only fields we care about.
+      # 1) Parse JSON and extract all fields we care about.
       - json:
           expressions:
-            ts: ts                           # RFC3339Nano timestamp
-            # classification signals
+            ts: ts                                # RFC3339Nano timestamp
+
+            # --- Monetary Values (for all types) ---
+            InterbankSettlementAmount: InterbankSettlementAmount # (pacs)
+            Amount: Amount                              # (camt)
+            ControlSum: ControlSum                        # (pain)
+            InstructedAmount: InstructedAmount              # (pain)
+
+            # --- Classification & Common Dims ---
             NumberOfTransactions: NumberOfTransactions
-            InterbankSettlementAmount: InterbankSettlementAmount
             CreditDebitIndicator: CreditDebitIndicator
-            # common dims (keep cardinality low!)
             ServiceLevelCode: ServiceLevelCode
-            DebtorAgentBICFI: DebtorAgentBICFI
-            CreditorAgentBICFI: CreditorAgentBICFI
+            Status: Status
+
+            # --- Currency Fields ---
             InterbankSettlementCurrency: InterbankSettlementCurrency
             Currency: Currency
-            Status: Status
+
+            # --- Debtor/Creditor Agent Fields (for BICs) ---
+            DebtorAgentBICFI: DebtorAgentBICFI
+            CreditorAgentBICFI: CreditorAgentBICFI
+
+            # --- Debtor/Creditor Account Fields (for IBANs / Country Codes) ---
+            DebtorAccountIdentificationIBAN: DebtorAccountIdentificationIBAN
+            CreditorAccountIdentificationIBAN: CreditorAccountIdentificationIBAN
 
       # 2) Use the record timestamp as the log timestamp.
       - timestamp:
@@ -41,9 +54,6 @@ scrape_configs:
           format: RFC3339Nano
 
       # 3) Derive a stable, low-cardinality event_type.
-      #    - PACS: has InterbankSettlementAmount
-      #    - CAMT: has CreditDebitIndicator/Amount
-      #    - PAIN: has NumberOfTransactions/ControlSum, no interbank fields
       - template:
           source: event_type
           template: |
@@ -65,7 +75,8 @@ scrape_configs:
             {{- else if .Currency -}}{{.Currency}}
             {{- else -}}UNKNOWN{{- end -}}
 
-      # --- Country codes from IBAN (best) or fallback to BIC country ---
+      # 5) --- Country codes from IBAN (best) or fallback to BIC country ---
+      #    (This will now work correctly since IBAN fields are extracted)
       - template:
           source: deb_cc
           template: '{{- if .DebtorAccountIdentificationIBAN -}}{{ regexReplaceAll "^(..).*" .DebtorAccountIdentificationIBAN "$1" }}{{- else if .DebtorAgentBICFI -}}{{ regexReplaceAll "^[A-Z]{4}([A-Z]{2}).*" .DebtorAgentBICFI "$1" }}{{- else -}}UN{{- end -}}'
@@ -78,11 +89,7 @@ scrape_configs:
           source: route
           template: '{{.deb_cc}}->{{.cred_cc}}'
 
-      - labels:
-          deb_cc:
-          cred_cc:
-          route:
-      # 5) Promote a SAFE subset of fields to labels.
+      # 6) Promote a SAFE subset of fields to labels.
       - labels:
           app:
           job:
@@ -93,17 +100,11 @@ scrape_configs:
           currency_norm:
           Status:
           CreditDebitIndicator:
+          # --- New Country Code Labels ---
+          deb_cc:
+          cred_cc:
+          route:
 
-      # 6) Trim any accidental high-cardinality labels (defensive).
+      # 7) Trim any accidental high-cardinality labels (defensive).
       - labeldrop:
-          - __path__           # internal
-          # do NOT add messageId/e2e/transaction ids here as labels
-
-      # 7) Optional: drop pure ACK/BOOK camt credits/debits if you only want PACS flows
-      #    (leave commented unless you explicitly want to filter)
-      # - match:
-      #     selector: '{job="payments_jsonl",event_type="camt"}'
-      #     stages:
-      #       - drop:
-      #           expression: '^(?:BOOK)$'
-      #           source: Status
+          - __path__
