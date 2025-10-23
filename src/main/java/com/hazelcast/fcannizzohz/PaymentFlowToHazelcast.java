@@ -46,12 +46,11 @@ public final class PaymentFlowToHazelcast {
     private static final DateTimeFormatter ISO_OFFSET = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
     private static final long ONE_SECOND_NANOS = 1_000_000_000L;
-    private static final long DEFAULT_REAL_POLL_SECONDS = 60L; // or inject via a param
 
     private PaymentFlowToHazelcast() {
     }
 
-    public static void run(String clusterName, String memberAddress, Clock clock, double rate, boolean switchToRealWhenCaughtUp) {
+    public static void run(String clusterName, String memberAddress, int minTxCount, int genPollSec, Clock clock, double rate, boolean switchToRealWhenCaughtUp) {
         // 1) Start member (or connect a client instead if you have a remote cluster)
         ClientConfig cfg = new ClientConfig();
         cfg.setClusterName(clusterName);                  // default for hazelcast/hazelcast:latest
@@ -63,10 +62,12 @@ public final class PaymentFlowToHazelcast {
         // 2) Create JSON mappings (idempotent)
         runSqlScriptFromClasspath(hz.getSql(), MAPPINGS_SQL);
 
-        startRealtimeGenerationRandomCountry(hz, clock, rate, switchToRealWhenCaughtUp);
+        startRealtimeGenerationRandomCountry(hz, minTxCount, genPollSec, clock, rate, switchToRealWhenCaughtUp);
     }
 
     private static void startRealtimeGenerationRandomCountry(HazelcastInstance hz,
+                                                             int minTxCount,
+                                                             int genPollSec,
                                                              Clock initialClock,
                                                              double initialRate,
                                                              boolean switchToRealWhenCaughtUp) {
@@ -97,7 +98,7 @@ public final class PaymentFlowToHazelcast {
             clock = Clock.systemUTC();
             usingSystemClock = true;
             rate = 1.0;
-            long realPeriodNanos = DEFAULT_REAL_POLL_SECONDS * ONE_SECOND_NANOS;
+            long realPeriodNanos = genPollSec * ONE_SECOND_NANOS;
             periodNanos = realPeriodNanos;
             nextDeadline = System.nanoTime() + computeInitialDelayNanos(clock, rate);
             System.out.println("[info] Simulated start is in the future; switched to system clock immediately.");
@@ -123,7 +124,7 @@ public final class PaymentFlowToHazelcast {
 
                 // --- generate one dataset using 'clock' (may be system after switch) ---
                 String debtorCountry = Data.DEFAULT_COUNTRIES.get(rnd.nextInt(Data.DEFAULT_COUNTRIES.size()));
-                int txCount = rnd.nextInt(1, 16);
+                int txCount = minTxCount + rnd.nextInt(1, minTxCount);
                 long minCents   = rnd.nextLong(50_000, 1_000_001 + 1);
                 long extraCents = rnd.nextLong(500_000, 50_000_001 + 1);
                 BigDecimal min  = BigDecimal.valueOf(minCents, 2);
@@ -172,7 +173,7 @@ public final class PaymentFlowToHazelcast {
                     clock = Clock.systemUTC();
                     usingSystemClock = true;
                     rate = 1.0;
-                    periodNanos = DEFAULT_REAL_POLL_SECONDS * ONE_SECOND_NANOS;
+                    periodNanos = genPollSec * ONE_SECOND_NANOS;
                     nextDeadline = System.nanoTime() + computeInitialDelayNanos(clock, rate);
                     System.out.println("[info] Switched to system clock (caught up).");
                 }
@@ -479,6 +480,7 @@ public final class PaymentFlowToHazelcast {
 
     private static void putJson(IMap<String, HazelcastJsonValue> map, String key, Map<String, Object> payload) {
         String json = toJson(payload);
+        System.out.println(json);
         map.set(key, new HazelcastJsonValue(json));
     }
 
