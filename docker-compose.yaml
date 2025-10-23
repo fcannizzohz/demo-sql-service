@@ -6,8 +6,7 @@ services:
     volumes:
       - ./src/main/resources:/home/hazelcast/data
     environment:
-      - HZ_NETWORK_JOIN_TCP_IP_ENABLED=true
-      - HZ_NETWORK_JOIN_TCP_IP_MEMBERS=hazelcast1,hazelcast2
+      - HAZELCAST_CONFIG=/home/hazelcast/data/hazelcast.yaml
       - HZ_LICENSEKEY=${HZ_LICENSEKEY}
 
   hazelcast2:
@@ -15,8 +14,7 @@ services:
     volumes:
       - ./src/main/resources:/home/hazelcast/data
     environment:
-      - HZ_NETWORK_JOIN_TCP_IP_ENABLED=true
-      - HZ_NETWORK_JOIN_TCP_IP_MEMBERS=hazelcast1,hazelcast2
+      - HAZELCAST_CONFIG=/home/hazelcast/data/hazelcast.yaml
       - HZ_LICENSEKEY=${HZ_LICENSEKEY}
 
   management-center:
@@ -99,10 +97,14 @@ services:
       - "dev" # pass the hz clusterName
       - "--member"
       - "hazelcast1:5701" # pass the hz member address
-      - "--days-past"
+      - "--hours-past"
       - "2" # Start the simulated timeline N days in the past
       - "--rate"
-      - "3600" # 1 real second = 600 simulated seconds
+      - "600" # 1 real second = 600 simulated seconds
+      - "--min-tx-count"
+      - "100"
+      - "--gen-poll-sec"
+      - "15"
 
 networks:
   default:
